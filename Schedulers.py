@@ -184,7 +184,7 @@ class AFD_Scheduler(Partitionned_Scheduler):
 
 
 class EDF_DU_IS_FF_Scheduler(Partitionned_Scheduler):
-    def __init__(self, processors: List[Cpu]):
+    def __init__(self):
         super(EDF_DU_IS_FF_Scheduler, self).__init__()
 
     def run(self, task_list: List[Task], processor_list: List[Cpu]):
@@ -201,10 +201,12 @@ class EDF_DU_IS_FF_Scheduler(Partitionned_Scheduler):
                 u_i = task.get_wcet() / task.get_period()
                 if self.cpu_U[j] + u_i <= self.processors[j].get_speed():
                     self.cpu_U[j] = self.cpu_U[j] + u_i
-                    self.processor_assignment.append(task.get_id())
+                    self.processor_assignment[j].append(task.get_id())
                     task_is_assigned = True
                     break
             if not task_is_assigned:
                 # TODO: Error
+                print("Error")
                 return 0
+        print(self.processor_assignment)
         return 1

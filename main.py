@@ -36,6 +36,24 @@ if __name__ == '__main__':
     ffd_simulator = Simulator(task_list, scheduler)
     ffd_simulator.run()
 
+    print()
+    print(" ------------------AFD----------------------")
+    print()
+
+    scheduler = AFD_Scheduler()
+    scheduler.run(task_list, cpus)
+    simulator = Simulator(task_list, scheduler)
+    simulator.run()
+
+    print()
+    print(" ------------------EDF_DU_IS_FF----------------------")
+    print()
+
+    scheduler = EDF_DU_IS_FF_Scheduler()
+    scheduler.run(task_list, cpus)
+    simulator = Simulator(task_list, scheduler)
+    simulator.run()
+
 """
 TODO: if insert and priority  or deadline is same depending on algo, order by task id so deterministic
     
