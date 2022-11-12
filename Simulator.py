@@ -3,11 +3,10 @@ from EventQueue import EventQueue
 from Schedulers import Scheduler
 from typing import List
 from Event import *
-from Cpu import *
 
 class Simulator:
-    def __init__(self, processors: List[Cpu], task_list: List[Task], scheduler: Scheduler):
-        self.processors = processors
+    def __init__(self, task_list: List[Task], scheduler: Scheduler):
+        self.processors = scheduler.get_processors()
         self.scheduler = scheduler
         self.task_list = task_list
         self.job_list = []
@@ -38,8 +37,8 @@ class Simulator:
                 cpu_print = job.get_processor().get_id()
                 # print(self.t, self.last_t)
                 job.execute(self.t, self.last_t)
-                # print("     Job ", job.get_id(), " is executed on CPU ", cpu_print,
-                #      "at time t = ", self.t)
+                print("     Job ", job.get_id(), " is executed on CPU ", cpu_print,
+                     "at time t = ", self.t)
 
         if event.get_id() == RELEASE:
             print("Event RELEASE of task ", event.get_task().get_id(), "at time t = ", self.t)
@@ -95,24 +94,14 @@ class Simulator:
         """
         Removes all events after time of treated event which are completion events.
         Then adds new generated events.
-        :param event: Treated event
         :return: None
         """
 
         self.queue.clean_queue()
 
         for job in self.job_list:
-            processor_speed = job.get_processor().get_speed()
-            completion_time = self.t + (job.get_wcet()/processor_speed)
-            # add completion time of task whose job is being executed
-            self.queue.add_event(Event(COMPLETION, completion_time, self.task_list[job.get_priority()]))
-
-
-"""
-to do
-
-- when reschedule -> put back lowest_priority = 0
-- correct t -> ex release not at self.t
-
-
-"""
+            if job.get_processor() is not None:
+                processor_speed = job.get_processor().get_speed()
+                completion_time = self.t + (job.get_wcet()/processor_speed)
+                # add completion time of task whose job is being executed
+                self.queue.add_event(Event(COMPLETION, completion_time, self.task_list[job.get_priority()]))

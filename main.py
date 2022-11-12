@@ -15,9 +15,8 @@ if __name__ == '__main__':
 
     scheduler = RM_Scheduler()
     task_list_rm = scheduler.run(task_list, cpus)
-    rm_simulator = Simulator(cpus, task_list_rm, scheduler)
+    rm_simulator = Simulator(task_list_rm, scheduler)
     rm_simulator.run()
-    """
 
     print()
     print(" ------------------EDF----------------------")
@@ -25,20 +24,19 @@ if __name__ == '__main__':
 
     scheduler = EDF_Scheduler()
     scheduler.run(task_list, cpus)
-    rm_simulator = Simulator(cpus, task_list, scheduler)
-    rm_simulator.run()
-    """
-    """
-    scheduler = Scheduler()
-    rm_simulator = scheduler.rm(task_list)
+    rm_simulator = Simulator(task_list, scheduler)
     rm_simulator.run()
 
-    edf_simulator = scheduler.edf(task_list)
-    edf_simulator.run()
-    """
+    print()
+    print(" ------------------FFD----------------------")
+    print()
+
+    scheduler = FFD_Scheduler()
+    scheduler.run(task_list, cpus)
+    ffd_simulator = Simulator(task_list, scheduler)
+    ffd_simulator.run()
 
 """
 TODO: if insert and priority  or deadline is same depending on algo, order by task id so deterministic
     
-    EDF PEUX CHANGER DE PRIORITÉ ENTRE 2 EVENEMENTS
 """
