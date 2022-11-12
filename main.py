@@ -18,6 +18,7 @@ if __name__ == '__main__':
     rm_simulator = Simulator(task_list_rm, scheduler)
     rm_simulator.run()
 
+
     print()
     print(" ------------------EDF----------------------")
     print()
@@ -26,7 +27,8 @@ if __name__ == '__main__':
     scheduler.run(task_list, cpus)
     rm_simulator = Simulator(task_list, scheduler)
     rm_simulator.run()
-
+    """
+    
     print()
     print(" ------------------FFD----------------------")
     print()
@@ -53,7 +55,7 @@ if __name__ == '__main__':
     scheduler.run(task_list, cpus)
     simulator = Simulator(task_list, scheduler)
     simulator.run()
-
+    """
 """
 TODO: if insert and priority  or deadline is same depending on algo, order by task id so deterministic
     

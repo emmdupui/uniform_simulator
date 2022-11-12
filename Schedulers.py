@@ -63,14 +63,19 @@ class RM_Scheduler(Scheduler):
     @staticmethod
     def add_job(job_list: List[Job], job: Job):
         pos = binary_search(0, len(job_list) - 1,
-                            lambda i: (job_list[i].get_priority() > job.get_priority()))
+                            lambda i: ((job_list[i].get_priority() > job.get_priority())
+                            or ((job_list[i].get_priority() == job.get_priority()) and
+                                (job_list[i].get_id() < job.get_id()))))
+        """
+        TODO : (job_list[i].get_id() < job.get_id()) or (job_list[i].get_id() > job.get_id())???????
+        """
         job_list.insert(pos, job)
 
     def run(self, task_list: List[Task], processor_list: List[Cpu]):
         self.processors = processor_list
         self.sort_processors()  # sort by decreasing speeds
-        self.task_list = task_list
-        return sorted(task_list, key=lambda task: task.get_deadline())  # sort by deadlines
+        self.task_list = sorted(task_list, key=lambda task: task.get_deadline())
+        return self.task_list  # sort by deadlines
 
 
 class EDF_Scheduler(Scheduler):
@@ -85,7 +90,7 @@ class EDF_Scheduler(Scheduler):
 
     def run(self, task_list: List[Task], processor_list: List[Cpu]):
         self.processors = processor_list
-        self.sort_processors()  # sort by increasing speeds
+        self.sort_processors()  # sort by decreasing speeds
         self.task_list = task_list
         return task_list
 
