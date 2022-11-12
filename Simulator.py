@@ -5,13 +5,13 @@ from typing import List
 from Event import *
 
 class Simulator:
-    def __init__(self, task_list: List[Task], scheduler: Scheduler):
+    def __init__(self, scheduler: Scheduler):
         self.processors = scheduler.get_processors()
         self.scheduler = scheduler
-        self.task_list = task_list
+        self.task_list = scheduler.get_task_list()
         self.job_list = []
-        # self.num_preemptions = []
-        # self.num_migrations = []
+        self.num_preemptions = []
+        self.num_migrations = []
         self.queue = EventQueue()
         self.t = 0  # common time for all
         self.last_t = 0
@@ -26,6 +26,12 @@ class Simulator:
         # while len(self.queue.get_len()) > 0 and self.no_deadlines_missed:
         while self.t < 14 and self.no_deadlines_missed:
             self.treat_event()
+
+        for task in self.task_list:
+            self.num_preemptions.append(task.get_num_preemptions())
+            self.num_migrations.append(task.get_num_migrations())
+
+        print(sum(self.num_preemptions), sum(self.num_preemptions))
 
     def treat_event(self):
         event = self.queue.get_head()
@@ -57,6 +63,7 @@ class Simulator:
                 self.check_deadline(job)
                 task.add_num_preempts(job.get_num_preemptions())
                 task.add_num_migrations(job.get_num_migrations())
+
                 del self.job_list[job_index]
                 print("     job_list = ", [self.job_list[i].get_id() for i in range(len(self.job_list))])
 

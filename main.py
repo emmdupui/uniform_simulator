@@ -14,10 +14,9 @@ if __name__ == '__main__':
     cpus = [Cpu(1, 2), Cpu(2, 1)]
 
     scheduler = RM_Scheduler()
-    task_list_rm = scheduler.run(task_list, cpus)
-    rm_simulator = Simulator(task_list_rm, scheduler)
+    scheduler.run(task_list, cpus)
+    rm_simulator = Simulator(scheduler)
     rm_simulator.run()
-
 
     print()
     print(" ------------------EDF----------------------")
@@ -25,17 +24,17 @@ if __name__ == '__main__':
 
     scheduler = EDF_Scheduler()
     scheduler.run(task_list, cpus)
-    rm_simulator = Simulator(task_list, scheduler)
+    rm_simulator = Simulator(scheduler)
     rm_simulator.run()
-    """
-    
+
+
     print()
     print(" ------------------FFD----------------------")
     print()
 
     scheduler = FFD_Scheduler()
     scheduler.run(task_list, cpus)
-    ffd_simulator = Simulator(task_list, scheduler)
+    ffd_simulator = Simulator(scheduler)
     ffd_simulator.run()
 
     print()
@@ -44,7 +43,7 @@ if __name__ == '__main__':
 
     scheduler = AFD_Scheduler()
     scheduler.run(task_list, cpus)
-    simulator = Simulator(task_list, scheduler)
+    simulator = Simulator(scheduler)
     simulator.run()
 
     print()
@@ -53,10 +52,9 @@ if __name__ == '__main__':
 
     scheduler = EDF_DU_IS_FF_Scheduler()
     scheduler.run(task_list, cpus)
-    simulator = Simulator(task_list, scheduler)
+    simulator = Simulator(scheduler)
     simulator.run()
-    """
-"""
-TODO: if insert and priority  or deadline is same depending on algo, order by task id so deterministic
-    
-"""
+
+
+# TODO: if insert and priority  or deadline is same depending on algo, order by task id so deterministic
+# DONE? I think

@@ -32,7 +32,7 @@ class Job:
         preemption = self.processor is not None and self.processor != processor
         if preemption:  # running job stops running or runs on new processor
             self.num_preemptions += 1
-            #print("HERE for job : ", self.id)
+            # print("HERE for job : ", self.id, self.num_preemptions)
 
         instant_migration = self.processor is not None and processor is not None and self.processor != processor
         later_migration = self.last_processor is not None and processor is not None and self.last_processor != processor
@@ -40,7 +40,7 @@ class Job:
             self.num_migrations += 1
 
         if self.processor is not None:
-            self.last_processor = self.processor # remenbers cpu on which he last ran on
+            self.last_processor = self.processor  # remenbers cpu on which he last ran on
         self.processor = processor
 
     def set_priority(self, priority: int):

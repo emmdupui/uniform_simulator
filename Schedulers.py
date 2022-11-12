@@ -14,6 +14,9 @@ class Scheduler:
     def add_job(job_list: List[Job], job: Job):
         pass
 
+    def get_task_list(self):
+        return self.task_list
+
     def get_processors(self):
         return self.processors
 
@@ -85,14 +88,16 @@ class EDF_Scheduler(Scheduler):
     @staticmethod
     def add_job(job_list: List[Job], job: Job):
         pos = binary_search(0, len(job_list) - 1,
-                            lambda j: job.get_deadline() <= job_list[j].get_deadline())
+                            lambda j: job.get_deadline() <= job_list[j].get_deadline()
+                                      or ((job_list[j].get_priority() == job.get_priority()) and
+                                          (job_list[j].get_id() < job.get_id()))
+                            )
         job_list.insert(pos, job)
 
     def run(self, task_list: List[Task], processor_list: List[Cpu]):
         self.processors = processor_list
         self.sort_processors()  # sort by decreasing speeds
         self.task_list = task_list
-        return task_list
 
 
 class Partitionned_Scheduler(Scheduler):
@@ -106,7 +111,10 @@ class Partitionned_Scheduler(Scheduler):
     @staticmethod
     def add_job(job_list: List[Job], job: Job):  # EDF BY DEFAULT
         pos = binary_search(0, len(job_list) - 1,
-                            lambda j: job.get_deadline() <= job_list[j].get_deadline())
+                            lambda j: job.get_deadline() <= job_list[j].get_deadline()
+                                      or ((job_list[j].get_priority() == job.get_priority()) and
+                                          (job_list[j].get_id() < job.get_id()))
+                            )
         job_list.insert(pos, job)
 
     def release_job(self, job_list: List[Job], task: Task, processors, t):
@@ -214,4 +222,3 @@ class EDF_DU_IS_FF_Scheduler(Partitionned_Scheduler):
                 print("Error")
                 return 0
         print(self.processor_assignment)
-        return 1
