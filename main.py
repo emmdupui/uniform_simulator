@@ -13,8 +13,7 @@ if __name__ == '__main__':
 
     cpus = [Cpu(1, 2), Cpu(2, 1)]
 
-    """
-    scheduler = RmScheduler()
+    scheduler = RM_Scheduler()
     task_list_rm = scheduler.run(task_list, cpus)
     rm_simulator = Simulator(cpus, task_list_rm, scheduler)
     rm_simulator.run()
@@ -28,7 +27,7 @@ if __name__ == '__main__':
     scheduler.run(task_list, cpus)
     rm_simulator = Simulator(cpus, task_list, scheduler)
     rm_simulator.run()
-
+    """
     """
     scheduler = Scheduler()
     rm_simulator = scheduler.rm(task_list)
@@ -37,8 +36,6 @@ if __name__ == '__main__':
     edf_simulator = scheduler.edf(task_list)
     edf_simulator.run()
     """
-
-
 
 """
 TODO: if insert and priority  or deadline is same depending on algo, order by task id so deterministic

@@ -25,7 +25,7 @@ class Simulator:
         print("     queue = ", [(self.queue.get_el(i).get_id(), self.queue.get_el(i).get_task().get_id()) for i in range(self.queue.get_len())])
 
         # while len(self.queue.get_len()) > 0 and self.no_deadlines_missed:
-        while self.t < 20 and self.no_deadlines_missed:
+        while self.t < 14 and self.no_deadlines_missed:
             self.treat_event()
 
     def treat_event(self):
@@ -56,6 +56,8 @@ class Simulator:
         for job_index, job in enumerate(self.job_list):
             if job.get_id() == task.get_id():
                 self.check_deadline(job)
+                task.add_num_preempts(job.get_num_preemptions())
+                task.add_num_migrations(job.get_num_migrations())
                 del self.job_list[job_index]
                 print("     job_list = ", [self.job_list[i].get_id() for i in range(len(self.job_list))])
 

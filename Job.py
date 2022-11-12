@@ -1,12 +1,10 @@
-from Cpu import Cpu
-
-
 class Job:
     def __init__(self, id: int, release_time: int, deadline: int, wcet: int, priority: int):
         self.id = id
         self.release_time = release_time
         self.deadline = deadline
         self.wcet = wcet
+        self.last_processor = None
         self.processor = None
         self.num_preemptions = 0
         self.num_migrations = 0
@@ -31,6 +29,18 @@ class Job:
         return self.processor
 
     def set_processor(self, processor):
+        preemption = self.processor is not None and self.processor != processor
+        if preemption:  # running job stops running or runs on new processor
+            self.num_preemptions += 1
+            #print("HERE for job : ", self.id)
+
+        instant_migration = self.processor is not None and processor is not None and self.processor != processor
+        later_migration = self.last_processor is not None and processor is not None and self.last_processor != processor
+        if instant_migration or later_migration:
+            self.num_migrations += 1
+
+        if self.processor is not None:
+            self.last_processor = self.processor # remenbers cpu on which he last ran on
         self.processor = processor
 
     def set_priority(self, priority: int):
