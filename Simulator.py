@@ -21,10 +21,10 @@ class Simulator:
         for task in self.task_list:
             self.queue.add_event(Event(RELEASE, self.t + task.get_offset(), task))  # add release event
 
-        print("     queue = ", [(self.queue.get_el(i).get_id(), self.queue.get_el(i).get_task().get_id()) for i in range(self.queue.get_len())])
+        print("     FIRST RUN queue = ", [(self.queue.get_el(i).get_id(), self.queue.get_el(i).get_task().get_id()) for i in range(self.queue.get_len())])
 
         # while len(self.queue.get_len()) > 0 and self.no_deadlines_missed:
-        while self.t < 14 and self.no_deadlines_missed:
+        while self.t <= 2 and self.no_deadlines_missed:
             self.treat_event()
 
         for task in self.task_list:
@@ -43,15 +43,23 @@ class Simulator:
                 cpu_print = job.get_processor().get_id()
                 # print(self.t, self.last_t)
                 job.execute(self.t, self.last_t)
-                print("     Job ", job.get_id(), " is executed on CPU ", cpu_print,
+                print("     Job ", job.get_id(), " is done execution on CPU ", cpu_print,
                      "at time t = ", self.t)
+
+        print("--------------------------------------------")
+        for job in self.job_list:
+            print(job.get_id())
+        print("--------------------------------------------")
 
         if event.get_id() == RELEASE:
             print("Event RELEASE of task ", event.get_task().get_id(), "at time t = ", self.t)
             self.treat_event_release(event)
-        else:  # COMPLETION
+        elif event.get_id() == COMPLETION:
             print("Event COMPLETION of task ", event.get_task().get_id(), "at time t = ", self.t)
             self.treat_event_completion(event)
+        else:
+            print("Event NEXT of task ", event.get_task().get_id(), "at time t = ", self.t)
+            self.treat_event_next(event)
 
         self.last_t = self.t
         return self.t
@@ -69,9 +77,9 @@ class Simulator:
 
         if self.no_deadlines_missed:
             # reschedule
-            self.job_list = self.scheduler.reschedule(self.job_list, self.processors)
+            self.job_list, next_interruption = self.scheduler.reschedule(self.job_list, self.processors)
 
-            self.update_queue()
+            self.update_queue(next_interruption)
 
         print("     queue = ", [(self.queue.get_el(i).get_id(), self.queue.get_el(i).get_task().get_id(),self.queue.get_el(i).get_t()) for i in range(self.queue.get_len())],
               " at time t = ", self.t)
@@ -79,25 +87,33 @@ class Simulator:
     def treat_event_release(self, event):
         task = event.get_task()
 
-        # Add release job to active jobs
         self.scheduler.release_job(self.job_list, task, self.processors, self.t)
         print("     job_list = ", [self.job_list[i].get_id() for i in range(len(self.job_list))])
 
-        self.job_list = self.scheduler.reschedule(self.job_list, self.processors)
+        self.job_list, next_interruption = self.scheduler.reschedule(self.job_list, self.processors)
 
-        self.update_queue()
-
+        self.update_queue(next_interruption)
+ 
         # Add next release
         new_release_time = self.t + task.get_period()
         self.queue.add_event(Event(RELEASE, new_release_time, task))  # add release event for next job of same task
         print("     queue = ", [(self.queue.get_el(i).get_id(), self.queue.get_el(i).get_task().get_id(), self.queue.get_el(i).get_t()) for i in range(self.queue.get_len())])
+
+    def treat_event_next(self, event):
+        task = event.get_task()
+
+        self.job_list, next_interruption = self.scheduler.reschedule(self.job_list, self.processors)
+
+        self.update_queue(next_interruption)
+        print("     queue = ", [(self.queue.get_el(i).get_id(), self.queue.get_el(i).get_task().get_id(), self.queue.get_el(i).get_t()) for i in range(self.queue.get_len())])
+
 
     def check_deadline(self, job: Job):
         if job.get_deadline() < self.t:
             self.no_deadlines_missed = False
             print("DEADLINE MISSED at time t = ", job.get_deadline(), "by job ", job.get_id())
 
-    def update_queue(self):
+    def update_queue(self, next_interruption):
         """
         Removes all events after time of treated event which are completion events.
         Then adds new generated events.
@@ -108,7 +124,17 @@ class Simulator:
 
         for job in self.job_list:
             if job.get_processor() is not None:
-                processor_speed = job.get_processor().get_speed()
-                completion_time = self.t + (job.get_wcet()/processor_speed)
-                # add completion time of task whose job is being executed
-                self.queue.add_event(Event(COMPLETION, completion_time, self.task_list[job.get_priority()]))
+
+                if next_interruption[0] == -1:
+                    processor_speed = job.get_processor().get_speed()
+                    completion_time = self.t + (job.get_wcet()/processor_speed)
+                    # add completion time of task whose job is being executed
+                    self.queue.add_event(Event(COMPLETION, completion_time, self.task_list[job.get_id()]))
+                elif next_interruption[1].get_id() == job.get_id():
+                    if next_interruption[1].get_wcet() == next_interruption[0]:
+                        self.queue.add_event(
+                            Event(COMPLETION, self.t + next_interruption[0], self.task_list[job.get_id()]))
+                        self.scheduler.reset_joint_period(next_interruption[1].get_priority())
+                    else:
+                        # TODO: processor speed????
+                        self.queue.add_event(Event(NEXT, self.t + next_interruption[0], self.task_list[job.get_id()]))

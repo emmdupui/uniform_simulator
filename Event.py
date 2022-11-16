@@ -2,6 +2,7 @@ from Task import Task
 
 RELEASE = 1
 COMPLETION = 2
+NEXT = 3
 
 
 class Event:

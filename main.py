@@ -11,8 +11,9 @@ if __name__ == '__main__':
 
     task_list = task_file_parser(args.task_file)
 
-    cpus = [Cpu(1, 2), Cpu(2, 1)]
+    cpus = [Cpu(1, 1), Cpu(2, 1)]
 
+    """
     scheduler = RM_Scheduler()
     scheduler.run(task_list, cpus)
     rm_simulator = Simulator(scheduler)
@@ -54,7 +55,11 @@ if __name__ == '__main__':
     scheduler.run(task_list, cpus)
     simulator = Simulator(scheduler)
     simulator.run()
-
+    """
+    scheduler = Level_Scheduler()
+    scheduler.run(task_list, cpus)
+    rm_simulator = Simulator(scheduler)
+    rm_simulator.run()
 
 # TODO: if insert and priority  or deadline is same depending on algo, order by task id so deterministic
 # DONE? I think
