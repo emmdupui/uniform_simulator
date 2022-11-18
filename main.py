@@ -11,7 +11,7 @@ if __name__ == '__main__':
 
     task_list = task_file_parser(args.task_file)
 
-    cpus = [Cpu(1, 1), Cpu(2, 1)]
+    cpus = [Cpu(0, 1), Cpu(1, 1)]
 
     """
     scheduler = RM_Scheduler()

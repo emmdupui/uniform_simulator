@@ -24,7 +24,7 @@ class Simulator:
         print("     FIRST RUN queue = ", [(self.queue.get_el(i).get_id(), self.queue.get_el(i).get_task().get_id()) for i in range(self.queue.get_len())])
 
         # while len(self.queue.get_len()) > 0 and self.no_deadlines_missed:
-        while self.t <= 2 and self.no_deadlines_missed:
+        while self.t <= 5 and self.no_deadlines_missed:
             self.treat_event()
 
         for task in self.task_list:
@@ -46,10 +46,12 @@ class Simulator:
                 print("     Job ", job.get_id(), " is done execution on CPU ", cpu_print,
                      "at time t = ", self.t)
 
+        """
         print("--------------------------------------------")
         for job in self.job_list:
             print(job.get_id())
         print("--------------------------------------------")
+        """
 
         if event.get_id() == RELEASE:
             print("Event RELEASE of task ", event.get_task().get_id(), "at time t = ", self.t)
@@ -59,6 +61,10 @@ class Simulator:
             self.treat_event_completion(event)
         else:
             print("Event NEXT of task ", event.get_task().get_id(), "at time t = ", self.t)
+            for job in self.job_list:
+                if job.get_id() == event.get_task().get_id():
+                    if job.get_priority() != -1:
+                        self.scheduler.shift(job.get_priority())
             self.treat_event_next(event)
 
         self.last_t = self.t
@@ -124,6 +130,9 @@ class Simulator:
 
         for job in self.job_list:
             if job.get_processor() is not None:
+                # print("RES = ", next_interruption)
+                #if next_interruption[0] != -1:
+                    # print("id = ", next_interruption[1].get_id(), job.get_id() )
 
                 if next_interruption[0] == -1:
                     processor_speed = job.get_processor().get_speed()
@@ -138,3 +147,4 @@ class Simulator:
                     else:
                         # TODO: processor speed????
                         self.queue.add_event(Event(NEXT, self.t + next_interruption[0], self.task_list[job.get_id()]))
+
