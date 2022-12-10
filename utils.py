@@ -30,7 +30,7 @@ def task_file_parser(filename: str) -> List[Task]:
         id = 0
         for line in file:
             if len(line.strip()):  # don't care about empty lines
-                task_properties = map(int, line.strip().split())  # retrieve task properties as integers list
+                task_properties = map(float, line.strip().split())  # retrieve task properties as integers list
                 task_list.append(Task(id, *task_properties))
                 id += 1
     return task_list

@@ -44,21 +44,11 @@ class Scheduler:
 
     def reschedule(self, job_list: List[Job], processors) -> Tuple[List[Any], Tuple[Union[float, Any], Any]]:
         new_job_list = []
-        next_interruption = (None, math.inf)
-        count = 0
         for job in job_list:
             self.add_job(new_job_list, job)
             self.assign_processor(job, job_list, processors)
-            if next_interruption[1] is None or next_interruption[0].get_priority() == job.get_priority():
-                if job.get_wcet() < next_interruption[1]:
-                    count = 1
-                elif job.get_wcet() == next_interruption[1]:
-                    next_interruption = (job, job.get_wcet())
-                    count += 1
             # print("         UPDATE: job ", job.get_id(), "on processor ", job.get_processor().get_id())
-        if next_interruption[0] is not None:
-            next_interruption_duration = next_interruption[0].get_wcet() / count
-            return new_job_list, (next_interruption_duration, next_interruption[0].get_priority())
+
         return new_job_list, (-1, None)
 
     @staticmethod
@@ -69,14 +59,13 @@ class Scheduler:
         else:
             job.set_processor(None)
 
-    def get_assigment(self, task):
-        # TODO: necessary??
-        pass
-
     def reset_joint_period(self, processor):
         pass
 
     def shift(self, param):
+        pass
+
+    def reset_all(self):
         pass
 
 
@@ -136,25 +125,22 @@ class Level_Scheduler(Scheduler):
         self.memory = [False for _ in processors]
         self.join_memory = [[] for _ in self.processors]
 
-
     def add_job(self, job_list: List[Job], job: Job):
         pos = binary_search(0, len(job_list) - 1,
-                            lambda j: job.get_wcet() > job_list[j].get_wcet()
+                            lambda j: job.get_wcet() < job_list[j].get_wcet()
                                       or ((job.get_wcet() == job_list[j].get_wcet()) and
                                           (job_list[j].get_id() > job.get_id()))
                             )
         job_list.insert(pos, job)
-
 
     def run(self, task_list: List[Task], processor_list: List[Cpu]):
         self.processors = processor_list
         self.sort_processors()  # sort by decreasing speeds
         self.task_list = task_list
         self.processor_assignment = [[] for _ in self.processors]
-        self.test = [0 for _ in self.processors]
         self.occupied = [False for _ in self.processors]
         self.period_joint = [None for _ in self.processors]
-        self.memory = [[] for _ in self.processors]
+        self.memory = [False for _ in self.processors]  # memory of joined jobs are running on processor
         self.join_memory = [[] for _ in self.processors]
 
     def reschedule(self, job_list: List[Job], processors) -> Tuple[List[Any], Tuple[Union[float, Any], Any]]:
@@ -165,9 +151,22 @@ class Level_Scheduler(Scheduler):
         temp_active_job_list = new_job_list[:]
         temp_processor_assignment = [[] for _ in self.processors]
 
+        still_running = False
+        for index, i in enumerate(self.join_memory):
+            for j in temp_active_job_list:
+                if j in i:
+                    still_running = True
+            if not still_running:
+                self.join_memory[index] = []
+                self.memory[index] = False
+                self.occupied[index] = False
+                self.processor_assignment[index] = []
+                self.join_memory[index] = []
+                self.period_joint[index] = None
+
         priority = 0
-        while len(temp_active_job_list) > 0 and [] in temp_processor_assignment:
-            jobs_to_run = self.get_highest_priority_jobs(temp_active_job_list, temp_processor_assignment, priority)
+        while len(temp_active_job_list) > 0 and [] in temp_processor_assignment and priority < len(temp_processor_assignment):
+            jobs_to_run = self.get_highest_priority_jobs(temp_active_job_list, priority)
             for i in range(len(jobs_to_run)):
                 if not self.memory[priority]:
                     temp_processor_assignment[priority].append(jobs_to_run[i])
@@ -175,20 +174,19 @@ class Level_Scheduler(Scheduler):
                     del temp_active_job_list[temp_active_job_list.index(jobs_to_run[i])]
                 else:
                     temp_processor_assignment[priority] = self.join_memory[priority]
-            if len(jobs_to_run)>1:
+            if len(jobs_to_run) > 1:
                 self.memory[priority] = True
-                self.join_memory[priority] = jobs_to_run
+            self.join_memory[priority] = temp_processor_assignment[priority]
             priority += 1
+
         self.processor_assignment = temp_processor_assignment
 
         self.occupied = [False for _ in self.processors]
         for job in job_list:
-            self.assign_processor(job, self.processor_assignment, processors)
+            self.assign_processor(job, new_job_list, processors)
 
+        # print("     processor_assignment : ", self.processor_assignment)
 
-        print("     processor_assignment : ",self.processor_assignment)
-
-        # TODO print("TEST ", self.test)
         next_job_interruption = None
         for index, cpu in enumerate(self.processor_assignment):
             if len(cpu) > 1 and (next_job_interruption is None or next_job_interruption.get_wcet() < cpu[0].get_wcet()):
@@ -199,8 +197,11 @@ class Level_Scheduler(Scheduler):
             if self.period_joint[next_job_interruption.get_priority()] is None:
                 self.period_joint[next_job_interruption.get_priority()] = next_job_interruption.get_wcet()
             number_joint_jobs = len(self.processor_assignment[next_job_interruption.get_priority()])
-            next_interruption_duration = self.period_joint[next_job_interruption.get_priority()] / number_joint_jobs
-            print("     -- Interruption duration: ", next_interruption_duration)
+            if next_job_interruption.get_wcet() == 0:
+                return (new_job_list, (0, next_job_interruption))
+            else:
+                next_interruption_duration = self.period_joint[next_job_interruption.get_priority()] / number_joint_jobs
+            # print("     -- Interruption duration: ", next_interruption_duration)
             res = (new_job_list, (next_interruption_duration, next_job_interruption))
         return res
 
@@ -210,33 +211,37 @@ class Level_Scheduler(Scheduler):
     def reset_joint_period(self, processor):
         self.processor_assignment[processor] = []
         self.period_joint[processor] = None
+        
+    def reset_all(self):
+        self.processor_assignment = [[] for _ in self.processors]
+        self.occupied = [False for _ in self.processors]
+        self.period_joint = [None for _ in self.processors]
+        self.memory = [False for _ in self.processors]  # memory of joined jobs are running on processor
+        self.join_memory = [[] for _ in self.processors]
 
-    """
-    def set_job_priority(self, job, job_list, old, initial = False):
-        p_i = job_list.index(job)
-        while p_i > 0 and (job_list[p_i-1].get_wcet() == job.get_wcet() or
-                           (job_list[p_i-1].get_priority() == job.get_priority() and job.get_priority() != -1)):
-            p_i -= 1
-        print("P_i for job", job.get_id()," : ",p_i)
-        job.set_priority(p_i)
-    """
-    def assign_processor(self, job: Job, temp_processor_assignment, processor_list: List[Cpu]):
+    def assign_processor(self, job: Job, new_job_list, processor_list: List[Cpu]):
         # print("job ", job.get_id(), " PRIO ", job.get_priority())
-        num_cpu_available = self.occupied.count(False)
         p_i = job.get_priority()
-        if p_i != -1 and p_i < len(processor_list):
-            if job in self.join_memory[p_i] :
+        num_higher_priority = 0
+        for i in range(p_i):
+            num_higher_priority += len(self.processor_assignment[i])
+
+        if p_i != -1 and num_higher_priority < len(processor_list):
+            if job in self.join_memory[p_i]:
                 job_index = self.join_memory[p_i].index(job)
             else:
                 job_index = self.processor_assignment[p_i].index(job)
 
-            num_used_processors = len(processor_list)-num_cpu_available
-            processor = (num_used_processors +
-                        len(self.processor_assignment[p_i]) - job_index) % len(self.processor_assignment[p_i])
+            num_cpu_available = len(processor_list)
+            for i in range(p_i):
+                if i >= 0:
+                    num_cpu_available -= len(self.join_memory[i])
+            num_used_processors = len(processor_list) - num_cpu_available
+            processor = num_used_processors + (job_index % len(self.processor_assignment[p_i]))
 
             # print("proc ", processor, num_cpu_available,num_used_processors, job.get_id())
             if processor <= num_cpu_available and processor < len(processor_list) and processor >= num_used_processors:
-                print("SET job ", job.get_id(), "on CPU ", processor)
+                # print("SET job ", job.get_id(), "on CPU ", processor)
                 job.set_processor(processor_list[processor])
                 self.occupied[processor] = True
             else:
@@ -244,13 +249,18 @@ class Level_Scheduler(Scheduler):
         else:
             job.set_processor(None)
 
-    def get_highest_priority_jobs(self, temp_active_job_list, temp_processor_assignment, priority):
+    def get_highest_priority_jobs(self, temp_active_job_list, priority):
         highest_jobs = []
-        highest_wcet = temp_active_job_list[0].get_wcet()
+        lowest_wcet = temp_active_job_list[0].get_wcet()
         current_index = 0
-        while current_index < len(temp_active_job_list) and (highest_wcet == temp_active_job_list[current_index].get_wcet()
-                or (self.memory[priority] and temp_active_job_list[current_index] in self.processor_assignment[priority])):
-            highest_jobs.append(temp_active_job_list[current_index])
+
+        is_lower_priority = temp_active_job_list[current_index].get_priority() <= priority
+        while current_index < len(temp_active_job_list) and is_lower_priority and (
+                lowest_wcet == temp_active_job_list[current_index].get_wcet()
+                or (self.memory[priority] and temp_active_job_list[current_index] in self.processor_assignment[
+            priority])):  # if same prioriy or running jointly on a processor
+            if temp_active_job_list[current_index].get_priority() == priority or temp_active_job_list[current_index].get_priority() == -1:
+                highest_jobs.append(temp_active_job_list[current_index])
             current_index += 1
         return highest_jobs
 
@@ -281,7 +291,7 @@ class Partitionned_Scheduler(Scheduler):
                 self.add_job(self.active_jobs[cpu_num], new_job)
         self.assign_processor(new_job, job_list)
 
-    def reschedule(self, job_list: List[Job], processors) -> List[Job]:
+    def reschedule(self, job_list: List[Job], processors) -> Tuple[List[Any], Tuple[int, None]]:
         new_job_list = []
         new_active_job_list = [[] for _ in self.processors]
         for job in job_list:
@@ -294,7 +304,7 @@ class Partitionned_Scheduler(Scheduler):
             self.assign_processor(job, job_list)
             # print("         UPDATE: job ", job.get_id(), "on processor ", job.get_processor().get_id())
         self.active_jobs = new_active_job_list
-        return new_job_list
+        return new_job_list, (-1, None)
 
     def assign_processor(self, job: Job, job_list: List[Job]):
         for cpu_num, cpu in enumerate(self.processor_assignment):
@@ -320,21 +330,22 @@ class Partitionned_Scheduler(Scheduler):
                 return 0
         return 1
 
+    def set_processor_assignment(self, processor_assignment):
+        self.processor_assignment = processor_assignment
+
 
 class FFD_Scheduler(Partitionned_Scheduler):
     def __init__(self):
         super(FFD_Scheduler, self).__init__()
 
     def run(self, task_list: List[Task], processor_list: List[Cpu]):
-        self.processors = processor_list
-        self.sort_processors()  # sort by decreasing speeds
+        self.processors = processor_list  # no sorting as any processor fit is fine
         self.active_jobs = [[] for _ in self.processors]
         self.processor_assignment = [[] for _ in self.processors]
         self.cpu_U = [0 for _ in self.processors]
-
         self.task_list = task_list
-        # assign to local cpu AFT
         self.processor_task_assignment()
+        print("processors: ", self.processor_assignment)
 
 
 class AFD_Scheduler(Partitionned_Scheduler):
@@ -348,6 +359,7 @@ class AFD_Scheduler(Partitionned_Scheduler):
         self.cpu_U = [0 for _ in self.processors]
         self.task_list = task_list
         self.processor_task_assignment()
+        print("processors: ", self.processor_assignment)
 
 
 class EDF_DU_IS_FF_Scheduler(Partitionned_Scheduler):
@@ -375,4 +387,6 @@ class EDF_DU_IS_FF_Scheduler(Partitionned_Scheduler):
                 # TODO: Error
                 print("Error")
                 return 0
-        print(self.processor_assignment)
+        print("processors: ", self.processor_assignment)
+        self.task_list = task_list
+        return 1

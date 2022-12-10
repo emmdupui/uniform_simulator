@@ -35,8 +35,8 @@ class Job:
             # print("HERE for job : ", self.id, self.num_preemptions)
 
         instant_migration = self.processor is not None and processor is not None and self.processor != processor
-        later_migration = self.last_processor is not None and processor is not None and self.last_processor != processor
-        if instant_migration or later_migration:
+        # TODO : ? later_migration = self.last_processor is not None and processor is not None and self.last_processor != processor
+        if instant_migration:
             self.num_migrations += 1
 
         if self.processor is not None:
