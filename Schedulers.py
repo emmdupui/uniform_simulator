@@ -127,7 +127,7 @@ class Level_Scheduler(Scheduler):
 
     def add_job(self, job_list: List[Job], job: Job):
         pos = binary_search(0, len(job_list) - 1,
-                            lambda j: job.get_wcet() < job_list[j].get_wcet()
+                            lambda j: job.get_wcet() > job_list[j].get_wcet()
                                       or ((job.get_wcet() == job_list[j].get_wcet()) and
                                           (job_list[j].get_id() > job.get_id()))
                             )
@@ -151,8 +151,8 @@ class Level_Scheduler(Scheduler):
         temp_active_job_list = new_job_list[:]
         temp_processor_assignment = [[] for _ in self.processors]
 
-        still_running = False
         for index, i in enumerate(self.join_memory):
+            still_running = False
             for j in temp_active_job_list:
                 if j in i:
                     still_running = True
@@ -161,24 +161,32 @@ class Level_Scheduler(Scheduler):
                 self.memory[index] = False
                 self.occupied[index] = False
                 self.processor_assignment[index] = []
-                self.join_memory[index] = []
                 self.period_joint[index] = None
 
-        priority = 0
-        while len(temp_active_job_list) > 0 and [] in temp_processor_assignment and priority < len(temp_processor_assignment):
-            jobs_to_run = self.get_highest_priority_jobs(temp_active_job_list, priority)
+        while len(temp_active_job_list) > 0 and [] in temp_processor_assignment:
+            first_free_processor = temp_processor_assignment.index([])
+            jobs_to_run = self.get_highest_priority_jobs(temp_active_job_list, first_free_processor)
+            #print([job.get_id() for job in jobs_to_run], first_free_processor)
             for i in range(len(jobs_to_run)):
-                if not self.memory[priority]:
-                    temp_processor_assignment[priority].append(jobs_to_run[i])
-                    jobs_to_run[i].set_priority(priority)
+                if not self.memory[first_free_processor] and jobs_to_run[i] not in self.join_memory[jobs_to_run[i].get_priority()]:
+                    temp_processor_assignment[first_free_processor].append(jobs_to_run[i])
                     del temp_active_job_list[temp_active_job_list.index(jobs_to_run[i])]
                 else:
-                    temp_processor_assignment[priority] = self.join_memory[priority]
-            if len(jobs_to_run) > 1:
-                self.memory[priority] = True
-            self.join_memory[priority] = temp_processor_assignment[priority]
-            priority += 1
+                    temp_processor_assignment[first_free_processor] = self.join_memory[first_free_processor]
+                    del temp_active_job_list[temp_active_job_list.index(jobs_to_run[i])]
 
+            if len(jobs_to_run) > 1:
+                self.memory[first_free_processor] = True
+            self.join_memory[first_free_processor] = temp_processor_assignment[first_free_processor]
+
+        for job in job_list:
+            job.set_priority(-1)
+            job.set_processor(None)
+
+        for priority, list in enumerate(temp_processor_assignment):
+            for job in list:
+                job.set_priority(priority)
+                job.set_processor(self.processors[priority])
         self.processor_assignment = temp_processor_assignment
 
         self.occupied = [False for _ in self.processors]
@@ -222,6 +230,8 @@ class Level_Scheduler(Scheduler):
     def assign_processor(self, job: Job, new_job_list, processor_list: List[Cpu]):
         # print("job ", job.get_id(), " PRIO ", job.get_priority())
         p_i = job.get_priority()
+
+        print("Job : ", job.get_id(), p_i)
         num_higher_priority = 0
         for i in range(p_i):
             num_higher_priority += len(self.processor_assignment[i])
@@ -236,31 +246,33 @@ class Level_Scheduler(Scheduler):
             for i in range(p_i):
                 if i >= 0:
                     num_cpu_available -= len(self.join_memory[i])
-            num_used_processors = len(processor_list) - num_cpu_available
-            processor = num_used_processors + (job_index % len(self.processor_assignment[p_i]))
 
-            # print("proc ", processor, num_cpu_available,num_used_processors, job.get_id())
-            if processor <= num_cpu_available and processor < len(processor_list) and processor >= num_used_processors:
-                # print("SET job ", job.get_id(), "on CPU ", processor)
-                job.set_processor(processor_list[processor])
-                self.occupied[processor] = True
-            else:
-                job.set_processor(None)
+            if job.get_processor() is None or self.memory[p_i]:
+                num_used_processors = len(processor_list) - num_cpu_available
+                processor = num_used_processors + (job_index % len(self.processor_assignment[p_i]))
+
+                # print("proc ", processor, num_cpu_available,num_used_processors, job.get_id())
+                if processor <= num_cpu_available and processor < len(processor_list) and processor >= num_used_processors:
+                    # print("SET job ", job.get_id(), "on CPU ", processor)
+                    job.set_processor(processor_list[processor])
+                    self.occupied[processor] = True
+                else:
+                    job.set_processor(None)
         else:
             job.set_processor(None)
 
     def get_highest_priority_jobs(self, temp_active_job_list, priority):
         highest_jobs = []
-        lowest_wcet = temp_active_job_list[0].get_wcet()
+        highest_wcet = temp_active_job_list[0].get_wcet()
         current_index = 0
 
         is_lower_priority = temp_active_job_list[current_index].get_priority() <= priority
         while current_index < len(temp_active_job_list) and is_lower_priority and (
-                lowest_wcet == temp_active_job_list[current_index].get_wcet()
+                highest_wcet == temp_active_job_list[current_index].get_wcet()
                 or (self.memory[priority] and temp_active_job_list[current_index] in self.processor_assignment[
             priority])):  # if same prioriy or running jointly on a processor
-            if temp_active_job_list[current_index].get_priority() == priority or temp_active_job_list[current_index].get_priority() == -1:
-                highest_jobs.append(temp_active_job_list[current_index])
+            #print(temp_active_job_list[current_index].get_priority(), temp_active_job_list[current_index].get_priority() == -1)
+            highest_jobs.append(temp_active_job_list[current_index])
             current_index += 1
         return highest_jobs
 

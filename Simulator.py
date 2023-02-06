@@ -4,6 +4,8 @@ from Schedulers import Scheduler
 from typing import List
 from Event import *
 
+RUNNING_TIME = 10
+
 class Simulator:
     def __init__(self, scheduler: Scheduler):
         self.processors = scheduler.get_processors()
@@ -24,10 +26,10 @@ class Simulator:
         #print("     FIRST RUN queue = ", [(self.queue.get_el(i).get_id(), self.queue.get_el(i).get_task().get_id()) for i in range(self.queue.get_len())])
 
         # while len(self.queue.get_len()) > 0 and self.no_deadlines_missed:
-        while self.t <= 10 and self.no_deadlines_missed:
+        while self.t <= RUNNING_TIME and self.no_deadlines_missed:
             self.treat_event()
-            print("     queue = ", [(self.queue.get_el(i).get_id(), self.queue.get_el(i).get_task().get_id(),self.queue.get_el(i).get_t()) for i in range(self.queue.get_len())],
-                  " at time t = ", self.t)
+            #print("     queue = ", [(self.queue.get_el(i).get_id(), self.queue.get_el(i).get_task().get_id(),self.queue.get_el(i).get_t()) for i in range(self.queue.get_len())],
+            #      " at time t = ", self.t)
 
         for task in self.task_list:
             self.num_preemptions.append(task.get_num_preemptions())
@@ -80,7 +82,7 @@ class Simulator:
         task = event.get_task()
 
         self.scheduler.release_job(self.job_list, task, self.processors, self.t)
-        #print("     job_list = ", [self.job_list[i].get_id() for i in range(len(self.job_list))])
+        print("     job_list = ", [self.job_list[i].get_id() for i in range(len(self.job_list))])
 
         self.job_list, next_interruption = self.scheduler.reschedule(self.job_list, self.processors)
 
@@ -89,9 +91,9 @@ class Simulator:
         # Add next release
         new_release_time = self.t + task.get_period()
         self.queue.add_event(Event(RELEASE, new_release_time, task))  # add release event for next job of same task
-        #print("     queue = ",
-        #      [(self.queue.get_el(i).get_id(), self.queue.get_el(i).get_task().get_id(), self.queue.get_el(i).get_t())
-        #       for i in range(self.queue.get_len())])
+        print("     queue = ",
+              [(self.queue.get_el(i).get_id(), self.queue.get_el(i).get_task().get_id(), self.queue.get_el(i).get_t())
+               for i in range(self.queue.get_len())])
 
     def treat_event_completion(self, event):
         task = event.get_task()
@@ -110,21 +112,19 @@ class Simulator:
 
             self.update_queue(next_interruption)
 
-        #print("     queue = ", [(self.queue.get_el(i).get_id(), self.queue.get_el(i).get_task().get_id(),self.queue.get_el(i).get_t()) for i in range(self.queue.get_len())],
-        #      " at time t = ", self.t)
+        print("     queue = ", [(self.queue.get_el(i).get_id(), self.queue.get_el(i).get_task().get_id(),self.queue.get_el(i).get_t()) for i in range(self.queue.get_len())],
+              " at time t = ", self.t)
 
     def treat_event_next(self, event):
-        task = event.get_task()
-
         self.job_list, next_interruption = self.scheduler.reschedule(self.job_list, self.processors)
 
         self.update_queue(next_interruption)
-        #print("     queue = ", [(self.queue.get_el(i).get_id(), self.queue.get_el(i).get_task().get_id(), self.queue.get_el(i).get_t()) for i in range(self.queue.get_len())])
+        print("     queue = ", [(self.queue.get_el(i).get_id(), self.queue.get_el(i).get_task().get_id(), self.queue.get_el(i).get_t()) for i in range(self.queue.get_len())])
 
     def check_deadline(self, job: Job):
         if job.get_deadline() < self.t:
             self.no_deadlines_missed = False
-            #print("DEADLINE MISSED at time t = ", job.get_deadline(), "by job ", job.get_id())
+            print("DEADLINE MISSED at time t = ", job.get_deadline(), "by job ", job.get_id())
 
     def update_queue(self, next_interruption):
         """
@@ -161,17 +161,17 @@ class NRT_Simulator(Simulator):
 
     def run(self):
         # while len(self.queue.get_len()) > 0 and self.no_deadlines_missed:
-        while self.t <= 10 and self.no_deadlines_missed:
-            #print("--------------START----------")
+        while self.t <= RUNNING_TIME and self.no_deadlines_missed:
+            print("--------------START----------")
             for task in self.task_list:
                 self.queue.add_event(Event(RELEASE, self.t + task.get_offset(), task))  # add release event
-            print("     queue = ", [(self.queue.get_el(i).get_id(), self.queue.get_el(i).get_task().get_id()) for i in range(self.queue.get_len())])
+            #print("     queue = ", [(self.queue.get_el(i).get_id(), self.queue.get_el(i).get_task().get_id()) for i in range(self.queue.get_len())])
 
-            while self.queue.get_len()> 0 and self.t <= 10:
+            while self.queue.get_len()> 0 and self.t <= RUNNING_TIME:
                 self.treat_event()
-                print("     queue = ",
-                      [(self.queue.get_el(i).get_id(), self.queue.get_el(i).get_task().get_id()) for i in
-                       range(self.queue.get_len())])
+                #print("     queue = ",
+                #      [(self.queue.get_el(i).get_id(), self.queue.get_el(i).get_task().get_id()) for i in
+                #       range(self.queue.get_len())])
 
             self.scheduler.reset_all()
             self.job_list = []
