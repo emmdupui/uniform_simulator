@@ -34,3 +34,6 @@ class Task:
 
     def get_num_migrations(self):
         return self.num_migrations
+
+    def set_id(self, id):
+        self.id = id

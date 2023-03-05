@@ -88,6 +88,8 @@ class RM_Scheduler(Scheduler):
         self.processors = processor_list
         self.sort_processors()  # sort by decreasing speeds
         self.task_list = sorted(task_list, key=lambda task: task.get_deadline())
+        for index, task in enumerate(self.task_list):
+            task.set_id(index)
         return self.task_list  # sort by deadlines
 
 
@@ -108,6 +110,8 @@ class EDF_Scheduler(Scheduler):
         self.processors = processor_list
         self.sort_processors()  # sort by decreasing speeds
         self.task_list = task_list
+        for index, task in enumerate(self.task_list):
+            task.set_id(index)
 
 
 class Level_Scheduler(Scheduler):
@@ -127,8 +131,8 @@ class Level_Scheduler(Scheduler):
 
     def add_job(self, job_list: List[Job], job: Job):
         pos = binary_search(0, len(job_list) - 1,
-                            lambda j: job.get_wcet() > job_list[j].get_wcet()
-                                      or ((job.get_wcet() == job_list[j].get_wcet()) and
+                            lambda j: job.get_u() > job_list[j].get_u()
+                                      or ((job.get_u() == job_list[j].get_u()) and
                                           (job_list[j].get_id() > job.get_id()))
                             )
         job_list.insert(pos, job)
@@ -142,6 +146,8 @@ class Level_Scheduler(Scheduler):
         self.period_joint = [None for _ in self.processors]
         self.memory = [False for _ in self.processors]  # memory of joined jobs are running on processor
         self.join_memory = [[] for _ in self.processors]
+        for index, task in enumerate(self.task_list):
+            task.set_id(index)
 
     def reschedule(self, job_list: List[Job], processors) -> Tuple[List[Any], Tuple[Union[float, Any], Any]]:
         new_job_list = []
@@ -357,6 +363,8 @@ class FFD_Scheduler(Partitionned_Scheduler):
         self.cpu_U = [0 for _ in self.processors]
         self.task_list = task_list
         self.processor_task_assignment()
+        for index, task in enumerate(self.task_list):
+            task.set_id(index)
         print("processors: ", self.processor_assignment)
 
 
@@ -385,7 +393,8 @@ class EDF_DU_IS_FF_Scheduler(Partitionned_Scheduler):
         self.processor_assignment = [[] for _ in self.processors]
         self.cpu_U = [0 for _ in self.processors]
         self.task_list = sorted(task_list, key=lambda task: task.get_wcet() / task.get_period())
-
+        for index, task in enumerate(self.task_list):
+            task.set_id(index)
         for task in self.task_list:
             task_is_assigned = False
             for j in range(len(self.processors)):
@@ -401,4 +410,5 @@ class EDF_DU_IS_FF_Scheduler(Partitionned_Scheduler):
                 return 0
         print("processors: ", self.processor_assignment)
         self.task_list = task_list
+
         return 1

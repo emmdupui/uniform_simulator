@@ -12,12 +12,21 @@ class Simulator:
         self.scheduler = scheduler
         self.task_list = scheduler.get_task_list()
         self.job_list = []
-        self.num_preemptions = []
-        self.num_migrations = []
+        self.num_preemptions = 0
+        self.num_migrations = 0
         self.queue = EventQueue()
         self.t = 0  # common time for all
         self.last_t = 0
         self.no_deadlines_missed = True
+
+    def get_num_preemptions(self):
+        return self.num_preemptions
+
+    def get_num_migrations(self):
+        return self.num_migrations
+
+    def not_feasible(self):
+        return not self.no_deadlines_missed
 
     def run(self):
         for task in self.task_list:
@@ -32,10 +41,10 @@ class Simulator:
             #      " at time t = ", self.t)
 
         for task in self.task_list:
-            self.num_preemptions.append(task.get_num_preemptions())
-            self.num_migrations.append(task.get_num_migrations())
+            self.num_preemptions += task.get_num_preemptions()
+            self.num_migrations += task.get_num_migrations()
 
-        print(sum(self.num_preemptions), sum(self.num_migrations))
+        print(self.num_preemptions, self.num_migrations)
 
     def treat_event(self):
         event = self.queue.get_head()
@@ -47,8 +56,8 @@ class Simulator:
                 cpu_print = job.get_processor().get_id()
                 # print(self.t, self.last_t)
                 job.execute(self.t, self.last_t)
-                print("     Job ", job.get_id(), " is done execution on CPU ", cpu_print,
-                     "at time t = ", self.t)
+                #print("     Job ", job.get_id(), " is done execution on CPU ", cpu_print,
+                #     "at time t = ", self.t)
 
         """
         print("--------------------------------------------")
@@ -82,7 +91,7 @@ class Simulator:
         task = event.get_task()
 
         self.scheduler.release_job(self.job_list, task, self.processors, self.t)
-        print("     job_list = ", [self.job_list[i].get_id() for i in range(len(self.job_list))])
+        #print("     job_list = ", [self.job_list[i].get_id() for i in range(len(self.job_list))])
 
         self.job_list, next_interruption = self.scheduler.reschedule(self.job_list, self.processors)
 
@@ -91,9 +100,9 @@ class Simulator:
         # Add next release
         new_release_time = self.t + task.get_period()
         self.queue.add_event(Event(RELEASE, new_release_time, task))  # add release event for next job of same task
-        print("     queue = ",
-              [(self.queue.get_el(i).get_id(), self.queue.get_el(i).get_task().get_id(), self.queue.get_el(i).get_t())
-               for i in range(self.queue.get_len())])
+        #print("     queue = ",
+        #      [(self.queue.get_el(i).get_id(), self.queue.get_el(i).get_task().get_id(), self.queue.get_el(i).get_t())
+        #       for i in range(self.queue.get_len())])
 
     def treat_event_completion(self, event):
         task = event.get_task()
@@ -104,7 +113,7 @@ class Simulator:
                 task.add_num_migrations(job.get_num_migrations())
 
                 del self.job_list[job_index]
-                print("     job_list = ", [self.job_list[i].get_id() for i in range(len(self.job_list))])
+                #print("     job_list = ", [self.job_list[i].get_id() for i in range(len(self.job_list))])
 
         if self.no_deadlines_missed:
             # reschedule
@@ -112,14 +121,14 @@ class Simulator:
 
             self.update_queue(next_interruption)
 
-        print("     queue = ", [(self.queue.get_el(i).get_id(), self.queue.get_el(i).get_task().get_id(),self.queue.get_el(i).get_t()) for i in range(self.queue.get_len())],
-              " at time t = ", self.t)
+        # print("     queue = ", [(self.queue.get_el(i).get_id(), self.queue.get_el(i).get_task().get_id(),self.queue.get_el(i).get_t()) for i in range(self.queue.get_len())],
+        #      " at time t = ", self.t)
 
     def treat_event_next(self, event):
         self.job_list, next_interruption = self.scheduler.reschedule(self.job_list, self.processors)
 
         self.update_queue(next_interruption)
-        print("     queue = ", [(self.queue.get_el(i).get_id(), self.queue.get_el(i).get_task().get_id(), self.queue.get_el(i).get_t()) for i in range(self.queue.get_len())])
+        # print("     queue = ", [(self.queue.get_el(i).get_id(), self.queue.get_el(i).get_task().get_id(), self.queue.get_el(i).get_t()) for i in range(self.queue.get_len())])
 
     def check_deadline(self, job: Job):
         if job.get_deadline() < self.t:
