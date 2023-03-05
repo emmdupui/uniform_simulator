@@ -1,7 +1,7 @@
 import argparse
 
 from Schedulers import *
-from Simulator import Simulator, NRT_Simulator
+from Simulator import Simulator
 from utils import task_file_parser
 import os
 
