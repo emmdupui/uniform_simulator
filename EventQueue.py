@@ -21,7 +21,7 @@ class EventQueue:
     def get_el(self, index):
         return self.queue[index]
 
-    def clean_queue(self):
+    def clean_queue(self, t):
         """
         Removes all events after time of treated event which are completion events.
         :param job_list:
@@ -31,7 +31,27 @@ class EventQueue:
 
         event_index = 0
         while event_index < len(self.queue):
-            if self.queue[event_index].get_id() != 1:
+            if self.queue[event_index].get_id() == 2 and self.queue[event_index].get_t() != t:
                 del self.queue[event_index]
             else:
                 event_index += 1
+
+    def add_next_join(self, interrupt_job, t):
+        earlier_interrupt = False
+        for event_index, event in enumerate(self.queue):
+            if event.get_id() == 3:
+                if interrupt_job[0] < event.get_t():
+                    del self.queue[event_index]
+                else:
+                    earlier_interrupt = True
+
+        if not earlier_interrupt:
+            event = Event(NEXT, t + interrupt_job[0], interrupt_job[1])
+            self.add_event(event)
+
+    def get_next_release(self):
+        next_release = -1
+        for event in self.queue:
+            if event.get_id() == 1:
+                return event.get_t()
+        return next_release

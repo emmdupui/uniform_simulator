@@ -88,7 +88,7 @@ if __name__ == '__main__':
             edf_DU_IS_FF_scheduler = EDF_DU_IS_FF_Scheduler()
             run_all(f, edf_DU_IS_FF_scheduler, 3)
             
-            """
+
             print()
             print(" ---------------------LEVEL-------------------------")
             print()
@@ -98,10 +98,7 @@ if __name__ == '__main__':
             cpus = [Cpu(0, 1), Cpu(1, 1)]
             
             level_scheduler = Level_Scheduler()
-            level_scheduler.run(task_list, cpus)
-            level_simulator = NRT_Simulator(level_scheduler)
-            level_simulator.run()
-            """
+            run_all(f, level_scheduler, 4)
 
             print("AVERAGE = ", average_all())
 
