@@ -61,32 +61,30 @@ class Simulator:
                 #print("     Job ", job.get_id(), " is done execution on CPU ", cpu_print,
                 #     "at time t = ", self.t)
 
-        task = event.get_task()
-        for job_index, job in enumerate(self.job_list):
-            if job.get_wcet() <= 0:
-                task.add_num_preempts(job.get_num_preemptions())
-                task.add_num_migrations(job.get_num_migrations())
-                del self.job_list[job_index]
-
         """
         print("--------------------------------------------")
         for job in self.job_list:
             print(job.get_id())
         print("--------------------------------------------")
         """
+        for job in self.job_list:
+            self.check_deadline(job)
 
-        if event.get_id() == RELEASE:
-            print("Event RELEASE of task ", event.get_task().get_id(), "at time t = ", self.t)
-            self.treat_event_release(event)
-        elif event.get_id() == COMPLETION:
-            print("Event COMPLETION of task ", event.get_task().get_id(), "at time t = ", self.t)
-            self.treat_event_completion(event)
+        if self.no_deadlines_missed:
+            if event.get_id() == RELEASE:
+                print("Event RELEASE of task ", event.get_task().get_id(), "at time t = ", self.t)
+                self.treat_event_release(event)
+            elif event.get_id() == COMPLETION:
+                print("Event COMPLETION of task ", event.get_task().get_id(), "at time t = ", self.t)
+                self.treat_event_completion(event)
+            else:
+                print("Event NEXT of task ", event.get_task().get_id(), "at time t = ", self.t)
+                self.treat_event_next()
+
+            self.last_t = self.t
+            return self.t
         else:
-            print("Event NEXT of task ", event.get_task().get_id(), "at time t = ", self.t)
-            self.treat_event_next()
-
-        self.last_t = self.t
-        return self.t
+            return "error"
 
     def treat_event_release(self, event):
         task = event.get_task()
@@ -155,9 +153,19 @@ class Simulator:
         self.queue.clean_queue(self.t)
 
         for job in self.job_list:
-            if job.get_u()>0 and sum(job.get_id() == event.get_task().get_id() and event.get_id() == 2 for event in self.queue.queue) == 0:
-                processors = job.get_processor()
-                if processors is not None:
+            processors = job.get_processor()
+            if processors is not None:
+                joined_jobs = self.scheduler.get_jobs_on_processor(processors[0].get_id())
+
+                if joined_jobs is None:  # not level algo
+                    cond = job.get_wcet() > 0 and sum(
+                        job.get_id() == event.get_task().get_id() and event.get_id() == 2 for event in
+                        self.queue.queue) == 0
+                else:
+                    cond = job.get_u() > 0 and sum(
+                        job.get_id() == event.get_task().get_id() and event.get_id() == 2 for event in
+                        self.queue.queue) == 0
+                if cond:
                     if len(processors) == 1:
                         processor_speed = processors[0].get_speed()
                     else:

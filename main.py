@@ -88,8 +88,8 @@ if __name__ == '__main__':
 
             edf_DU_IS_FF_scheduler = EDF_DU_IS_FF_Scheduler()
             run_all(f, edf_DU_IS_FF_scheduler, 3)
-            """
 
+            """
             print()
             print(" ---------------------LEVEL-------------------------")
             print()

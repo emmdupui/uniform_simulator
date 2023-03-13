@@ -211,7 +211,7 @@ class Partitionned_Scheduler(Scheduler):
     def add_job(job_list: List[Job], job: Job):  # EDF BY DEFAULT
         pos = binary_search(0, len(job_list) - 1,
                             lambda j: job.get_deadline() <= job_list[j].get_deadline()
-                                      or ((job_list[j].get_priority() == job.get_priority()) and
+                                      or ((job_list[j].get_deadline() == job.get_deadline()) and
                                           (job_list[j].get_id() < job.get_id()))
                             )
         job_list.insert(pos, job)
