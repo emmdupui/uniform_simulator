@@ -48,10 +48,3 @@ class EventQueue:
         if not earlier_interrupt:
             event = Event(NEXT, t + interrupt_job[0], interrupt_job[1])
             self.add_event(event)
-
-    def get_next_release(self):
-        next_release = -1
-        for event in self.queue:
-            if event.get_id() == 1:
-                return event.get_t()
-        return next_release

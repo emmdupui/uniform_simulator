@@ -50,13 +50,23 @@ class Simulator:
         event = self.queue.get_head()
         self.t = event.get_t()  # update common time to event time
         # compute job execution till now
-        for job in self.job_list:
+        for job_index, job in enumerate(self.job_list):
             if job.get_processor() is not None:  # job assigned to a processor
                 cpu_print = [processor.get_id() for processor in job.get_processor()]
                 # print(self.t, self.last_t)
-                job.execute(self.t, self.last_t)
+                if len(job.get_processor()) > 1:
+                    job.execute((self.t - self.last_t)*len(job.get_processor())/len(self.scheduler.get_jobs_on_processor(job.get_processor()[0].get_id())))
+                else:
+                    job.execute(self.t - self.last_t)
                 #print("     Job ", job.get_id(), " is done execution on CPU ", cpu_print,
                 #     "at time t = ", self.t)
+
+        task = event.get_task()
+        for job_index, job in enumerate(self.job_list):
+            if job.get_wcet() <= 0:
+                task.add_num_preempts(job.get_num_preemptions())
+                task.add_num_migrations(job.get_num_migrations())
+                del self.job_list[job_index]
 
         """
         print("--------------------------------------------")
@@ -80,13 +90,17 @@ class Simulator:
 
     def treat_event_release(self, event):
         task = event.get_task()
-
         # Add next release
         new_release_time = self.t + task.get_period()
         self.queue.add_event(Event(RELEASE, new_release_time, task))  # add release event for next job of same task
 
+
         self.scheduler.release_job(self.job_list, task, self.processors, self.t)
-        #print("     job_list = ", [self.job_list[i].get_id() for i in range(len(self.job_list))])
+        # print("     job_list = ", [self.job_list[i].get_id() for i in range(len(self.job_list))])
+
+        for job in self.job_list:
+            job.reset_u()
+            job.scale_u(self.scheduler.get_earliest_release(self.job_list, self.t, task) - self.t)
 
         self.job_list, interrupt_job = self.scheduler.reschedule(self.job_list, self.processors)
 
@@ -98,11 +112,10 @@ class Simulator:
     def treat_event_completion(self, event):
         task = event.get_task()
         for job_index, job in enumerate(self.job_list):
-            if job.get_id() == task.get_id():
+            if job.get_id() == task.get_id() and job.get_wcet() <= 0:
                 self.check_deadline(job)
                 task.add_num_preempts(job.get_num_preemptions())
                 task.add_num_migrations(job.get_num_migrations())
-
                 del self.job_list[job_index]
                 #print("     job_list = ", [self.job_list[i].get_id() for i in range(len(self.job_list))])
 
@@ -136,12 +149,13 @@ class Simulator:
         Then adds new generated events.
         :return: None
         """
+
         if interrupt_job[0] != -1:
             self.queue.add_next_join(interrupt_job, self.t)
         self.queue.clean_queue(self.t)
 
         for job in self.job_list:
-            if sum(job.get_id() == event.get_task().get_id() and event.get_id() == 2 for event in self.queue.queue) == 0:
+            if job.get_u()>0 and sum(job.get_id() == event.get_task().get_id() and event.get_id() == 2 for event in self.queue.queue) == 0:
                 processors = job.get_processor()
                 if processors is not None:
                     if len(processors) == 1:
@@ -151,9 +165,11 @@ class Simulator:
 
                     joined_jobs = self.scheduler.get_jobs_on_processor(processors[0].get_id())
                     if joined_jobs is not None:
-                        joint_wcet = sum(job.get_wcet() for job in joined_jobs)
-                        completion_time = self.t + (joint_wcet/processor_speed)/len(processors)
+                        joint_u = job.get_u()*len(joined_jobs)
+                        completion_time = self.t + (joint_u/processor_speed)/len(processors)
+                        completion_time = round(completion_time, 7)
                     else:
+                        #todo: get u or wcet?
                         completion_time = self.t + (job.get_wcet()/processor_speed)
                     # add completion time of task whose job is being executed
                     self.queue.add_event(Event(COMPLETION, completion_time, self.task_list[job.get_priority()]))

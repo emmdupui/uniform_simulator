@@ -5,11 +5,19 @@ class Job:
         self.deadline = deadline
         self.period = deadline-self.release_time
         self.wcet = wcet
+        self.u = self.wcet/self.period
+        self.initial_u = self.u
         self.last_processor = None
         self.processor = None
         self.num_preemptions = 0
         self.num_migrations = 0
         self.priority = priority
+
+    def get_u(self):
+        return self.u
+
+    def reset_u(self):
+        self.u = self.initial_u
 
     def get_id(self):
         return self.id
@@ -47,10 +55,13 @@ class Job:
     def set_priority(self, priority: int):
         self.priority = priority
 
-    def execute(self, t: int, last_t):
-        if (t-last_t) > 0:
+    def execute(self, t: int):
+        if (t) > 0:
             processor_speed = sum(proc.get_speed() for proc in self.processor) / len(self.processor)
-            self.wcet = self.wcet - (t-last_t)*processor_speed
+            self.wcet = self.wcet - t*processor_speed
+            self.wcet = round(self.wcet, 7)
+            self.u = self.u - t*processor_speed
+            self.u = round(self.u, 7)
             # print(self.wcet)
         if self.wcet == 0:
             self.processor = None
@@ -60,4 +71,7 @@ class Job:
 
     def get_num_migrations(self):
         return self.num_migrations
+
+    def scale_u(self, earliest_release):
+        self.u = self.initial_u*earliest_release
 

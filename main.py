@@ -54,6 +54,7 @@ if __name__ == '__main__':
         f = os.path.join(directory, filename)
         # checking if it is a file
         if os.path.isfile(f):
+
             print()
             print(" ------------------RM-----------------------")
             print()
@@ -87,7 +88,7 @@ if __name__ == '__main__':
 
             edf_DU_IS_FF_scheduler = EDF_DU_IS_FF_Scheduler()
             run_all(f, edf_DU_IS_FF_scheduler, 3)
-            
+            """
 
             print()
             print(" ---------------------LEVEL-------------------------")
@@ -99,6 +100,7 @@ if __name__ == '__main__':
             
             level_scheduler = Level_Scheduler()
             run_all(f, level_scheduler, 4)
+            """
 
             print("AVERAGE = ", average_all())
 
