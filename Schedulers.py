@@ -279,7 +279,11 @@ class FFD_Scheduler(Partitionned_Scheduler):
         self.processor_assignment = [[] for _ in self.processors]
         self.cpu_U = [cpu.get_speed() for cpu in self.processors]
         self.task_list = task_list
+        self.task_list = sorted(task_list, key=lambda task: task.get_wcet() / task.get_period(), reverse=True)
+        for index, task in enumerate(self.task_list):
+            task.set_id(index)
         self.processor_task_assignment()
+
         print("processors: ", self.processor_assignment)
 
 
@@ -293,7 +297,11 @@ class AFD_Scheduler(Partitionned_Scheduler):
         self.processor_assignment = [[] for _ in self.processors]
         self.cpu_U = [cpu.get_speed() for cpu in self.processors]
         self.task_list = task_list
+        self.task_list = sorted(task_list, key=lambda task: task.get_wcet() / task.get_period(), reverse=True)
+        for index, task in enumerate(self.task_list):
+            task.set_id(index)
         self.processor_task_assignment()
+
         print("processors: ", self.processor_assignment)
 
 
