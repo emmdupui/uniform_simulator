@@ -58,8 +58,8 @@ class Simulator:
                     job.execute((self.t - self.last_t)*len(job.get_processor())/len(self.scheduler.get_jobs_on_processor(job.get_processor()[0].get_id())))
                 else:
                     job.execute(self.t - self.last_t)
-                print("     Job ", job.get_id(), " is done execution on CPU ", cpu_print,
-                     "at time t = ", self.t)
+                #print("     Job ", job.get_id(), " is done execution on CPU ", cpu_print,
+                #     "at time t = ", self.t)
 
         """
         print("--------------------------------------------")

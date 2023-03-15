@@ -1,4 +1,4 @@
-WATERFALL_MIGRATIONS_ENABLED = False
+WATERFALL_MIGRATIONS_ENABLED = True
 
 class Job:
     def __init__(self, id: int, release_time: int, deadline: int, wcet: int, priority: int):
@@ -79,9 +79,9 @@ class Job:
         if (t) > 0:
             processor_speed = sum(proc.get_speed() for proc in self.processor) / len(self.processor)
             self.wcet = self.wcet - t*processor_speed
-            self.wcet = round(self.wcet, 7)
+            self.wcet = round(self.wcet, 5)
             self.u = self.u - t*processor_speed
-            self.u = round(self.u, 7)
+            self.u = round(self.u, 5)
             # print(self.wcet)
         if self.wcet == 0:
             self.processor = None
@@ -94,4 +94,5 @@ class Job:
 
     def scale_u(self, earliest_release):
         self.u = self.initial_u*earliest_release
+
 

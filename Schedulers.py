@@ -1,6 +1,6 @@
 from Cpu import Cpu
 from Task import Task
-from Job import Job, WATERFALL_MIGRATIONS_ENABLED
+from Job import Job
 from typing import List, Tuple, Any, Union
 from utils import binary_search
 import math
@@ -56,15 +56,7 @@ class Scheduler:
     def assign_processor(job: Job, job_list: List[Job], processor_list: List[Cpu]):
         job_priority = job_list.index(job)
         if job_priority < len(processor_list):
-            # not avoiding waterfall migrations
-            if not WATERFALL_MIGRATIONS_ENABLED:
-                job.set_processor([processor_list[job_priority]])
-            else:
-                # avoiding waterfall migrations
-                one_processor_is_None = job.get_processor() is None or processor_list[job_priority] is None
-                if one_processor_is_None or job.get_processor()[0].get_speed() != processor_list[job_priority].get_speed():
-                    job.set_processor([processor_list[job_priority]])
-
+            job.set_processor([processor_list[job_priority]])
         else:
             job.set_processor(None)
 
@@ -179,10 +171,11 @@ class Level_Scheduler(Scheduler):
                     else:
                         lower_prio_speed = 0
                     # print("Lower prio speed : ", lower_prio_speed)
-                    next_interruption_time = (running_job.get_u() - new_job_list[lower_prio_index].get_u())/(running_job_speed - lower_prio_speed)
-                    next_interruption_time = round(next_interruption_time, 7)
-                    if next_join[0] == -1 or next_interruption_time < next_join[0]:
-                        next_join = (next_interruption_time, new_job_list[lower_prio_index])
+                    if running_job_speed > lower_prio_speed:
+                        next_interruption_time = (running_job.get_u() - new_job_list[lower_prio_index].get_u())/(running_job_speed - lower_prio_speed)
+                        next_interruption_time = round(next_interruption_time, 7)
+                        if next_join[0] == -1 or next_interruption_time < next_join[0]:
+                            next_join = (next_interruption_time, new_job_list[lower_prio_index])
         #print(next_join)
         return new_job_list, next_join
 
@@ -287,11 +280,7 @@ class FFD_Scheduler(Partitionned_Scheduler):
         self.processor_assignment = [[] for _ in self.processors]
         self.cpu_U = [cpu.get_speed() for cpu in self.processors]
         self.task_list = task_list
-        self.task_list = sorted(task_list, key=lambda task: task.get_wcet() / task.get_period(), reverse=True)
-        for index, task in enumerate(self.task_list):
-            task.set_id(index)
         self.processor_task_assignment()
-
         print("processors: ", self.processor_assignment)
 
 
@@ -305,11 +294,7 @@ class AFD_Scheduler(Partitionned_Scheduler):
         self.processor_assignment = [[] for _ in self.processors]
         self.cpu_U = [cpu.get_speed() for cpu in self.processors]
         self.task_list = task_list
-        self.task_list = sorted(task_list, key=lambda task: task.get_wcet() / task.get_period(), reverse=True)
-        for index, task in enumerate(self.task_list):
-            task.set_id(index)
         self.processor_task_assignment()
-
         print("processors: ", self.processor_assignment)
 
 
