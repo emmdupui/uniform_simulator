@@ -5,10 +5,10 @@ from Simulator import Simulator
 from utils import task_file_parser
 import os
 
-preemptions = [0, 0, 0, 0, 0]
-migrations = [0, 0, 0, 0, 0]
-deadlines_missed = [0, 0, 0, 0, 0]
-iterations = [0, 0, 0, 0, 0]
+preemptions = [0 for _ in range(6)]
+migrations = [0 for _ in range(6)]
+deadlines_missed = [0 for _ in range(6)]
+iterations = [0 for _ in range(6)]
 
 
 def update_values(simulator, algo_num):
@@ -30,7 +30,7 @@ def run_all(f, scheduler, algo_num):
 
 
 def average_all():
-    average = [0,0,0,0,0]
+    average = [0 for _ in range(6)]
     for i in range(len(preemptions)):
         if iterations[i] != 0:
             av_preemptions = preemptions[i]/iterations[i]
@@ -54,7 +54,6 @@ if __name__ == '__main__':
         f = os.path.join(directory, filename)
         # checking if it is a file
         if os.path.isfile(f):
-
             print()
             print(" ------------------RM-----------------------")
             print()
@@ -67,13 +66,11 @@ if __name__ == '__main__':
             edf_scheduler = EDF_Scheduler()
             run_all(f, edf_scheduler, 1)
 
-
             print()
             print(" ------------------FFD----------------------")
             print()
             ffd_scheduler = FFD_Scheduler()
             run_all(f, ffd_scheduler, 2)
-
 
             print()
             print(" ------------------AFD----------------------")
@@ -87,9 +84,9 @@ if __name__ == '__main__':
             print()
 
             edf_DU_IS_FF_scheduler = EDF_DU_IS_FF_Scheduler()
-            run_all(f, edf_DU_IS_FF_scheduler, 3)
+            run_all(f, edf_DU_IS_FF_scheduler, 4)
 
-            """
+
             print()
             print(" ---------------------LEVEL-------------------------")
             print()
@@ -99,8 +96,8 @@ if __name__ == '__main__':
             cpus = [Cpu(0, 1), Cpu(1, 1)]
             
             level_scheduler = Level_Scheduler()
-            run_all(f, level_scheduler, 4)
-            """
+            run_all(f, level_scheduler, 5)
+
 
             print("AVERAGE = ", average_all())
 
