@@ -1,6 +1,6 @@
 from Cpu import Cpu
 from Task import Task
-from Job import Job
+from Job import Job, WATERFALL_MIGRATIONS_ENABLED
 from typing import List, Tuple, Any, Union
 from utils import binary_search
 import math
@@ -56,7 +56,15 @@ class Scheduler:
     def assign_processor(job: Job, job_list: List[Job], processor_list: List[Cpu]):
         job_priority = job_list.index(job)
         if job_priority < len(processor_list):
-            job.set_processor([processor_list[job_priority]])
+            # not avoiding waterfall migrations
+            if not WATERFALL_MIGRATIONS_ENABLED:
+                job.set_processor([processor_list[job_priority]])
+            else:
+                # avoiding waterfall migrations
+                one_processor_is_None = job.get_processor() is None or processor_list[job_priority] is None
+                if one_processor_is_None or job.get_processor()[0].get_speed() != processor_list[job_priority].get_speed():
+                    job.set_processor([processor_list[job_priority]])
+
         else:
             job.set_processor(None)
 
