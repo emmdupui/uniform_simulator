@@ -40,13 +40,19 @@ class Job:
     def set_processor(self, processor):
         if self.processor is not None and self.processor != processor:
             # print("HERE for job : ", self.id, self.num_preemptions)
-            self.num_preemptions += len(self.processor)
+            if len(self.processor) > 1:
+                self.num_preemptions += len(self.processor)-1
+            else:
+                self.num_preemptions += 1
 
         instant_migration = self.processor is not None and processor is not None and self.processor != processor
         #instant_migration = self.processor is not None and processor is not None and self.processor != processor
         # TODO : ? later_migration = self.last_processor is not None and processor is not None and self.last_processor != processor
         if instant_migration:
-            self.num_migrations += len(self.processor)
+            if len(self.processor) > 1:
+                self.num_migrations += len(self.processor) - 1
+            else:
+                self.num_migrations += 1
 
         if self.processor is not None:
             self.last_processor = self.processor  # remembers cpu on which he last ran on

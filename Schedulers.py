@@ -227,17 +227,17 @@ class Partitionned_Scheduler(Scheduler):
 
     def reschedule(self, job_list: List[Job], processors) -> Tuple[List[Any], Tuple[int, None]]:
         new_job_list = []
-        new_active_job_list = [[] for _ in self.processors]
+        self.active_jobs = [[] for _ in self.processors]
         for job in job_list:
             self.add_job(new_job_list, job)
 
             for cpu_num, cpu in enumerate(self.processor_assignment):
                 if job.get_id() in cpu:
-                    self.add_job(new_active_job_list[cpu_num], job)
+                    self.add_job(self.active_jobs[cpu_num], job)
+                    break
 
             self.assign_processor(job, job_list)
             # print("         UPDATE: job ", job.get_id(), "on processor ", job.get_processor().get_id())
-        self.active_jobs = new_active_job_list
         return new_job_list, (-1, None)
 
     def assign_processor(self, job: Job, job_list: List[Job]):
@@ -248,15 +248,16 @@ class Partitionned_Scheduler(Scheduler):
                 else:
                     job.set_processor(None)
                 break
+        # print(job.get_id(), job.get_processor())
 
     def processor_task_assignment(self):
         for task in self.task_list:
             task_is_assigned = False
             for j in range(len(self.processors)):
-                self.cpu_U[j] = self.processors[j].get_speed() - self.cpu_U[j]
                 u_i = task.get_wcet() / task.get_period()
                 if u_i <= self.cpu_U[j]:
                     self.processor_assignment[j].append(task.get_id())
+                    self.cpu_U[j] -= u_i
                     task_is_assigned = True
                     break
             if not task_is_assigned:
@@ -276,11 +277,9 @@ class FFD_Scheduler(Partitionned_Scheduler):
         self.processors = processor_list  # no sorting as any processor fit is fine
         self.active_jobs = [[] for _ in self.processors]
         self.processor_assignment = [[] for _ in self.processors]
-        self.cpu_U = [0 for _ in self.processors]
+        self.cpu_U = [cpu.get_speed() for cpu in self.processors]
         self.task_list = task_list
         self.processor_task_assignment()
-        for index, task in enumerate(self.task_list):
-            task.set_id(index)
         print("processors: ", self.processor_assignment)
 
 
@@ -292,7 +291,7 @@ class AFD_Scheduler(Partitionned_Scheduler):
         self.processors = processor_list  # no sorting as any processor fit is fine
         self.active_jobs = [[] for _ in self.processors]
         self.processor_assignment = [[] for _ in self.processors]
-        self.cpu_U = [0 for _ in self.processors]
+        self.cpu_U = [cpu.get_speed() for cpu in self.processors]
         self.task_list = task_list
         self.processor_task_assignment()
         print("processors: ", self.processor_assignment)
@@ -307,24 +306,11 @@ class EDF_DU_IS_FF_Scheduler(Partitionned_Scheduler):
         self.sort_processors(False)  # sort by increasing speeds
         self.active_jobs = [[] for _ in self.processors]
         self.processor_assignment = [[] for _ in self.processors]
-        self.cpu_U = [0 for _ in self.processors]
-        self.task_list = sorted(task_list, key=lambda task: task.get_wcet() / task.get_period())
+        self.cpu_U = [cpu.get_speed() for cpu in self.processors]
+
+        self.task_list = sorted(task_list, key=lambda task: task.get_wcet() / task.get_period(), reverse=True)
         for index, task in enumerate(self.task_list):
             task.set_id(index)
-        for task in self.task_list:
-            task_is_assigned = False
-            for j in range(len(self.processors)):
-                u_i = task.get_wcet() / task.get_period()
-                if self.cpu_U[j] + u_i <= self.processors[j].get_speed():
-                    self.cpu_U[j] = self.cpu_U[j] + u_i
-                    self.processor_assignment[j].append(task.get_id())
-                    task_is_assigned = True
-                    break
-            if not task_is_assigned:
-                # TODO: Error
-                print("Error")
-                return 0
-        print("processors: ", self.processor_assignment)
-        self.task_list = task_list
 
-        return 1
+        self.processor_task_assignment()
+        print("processors: ", self.processor_assignment)
