@@ -30,7 +30,7 @@ class Simulator:
 
     def run(self):
         for task in self.task_list:
-            self.queue.add_event(Event(RELEASE, self.t + task.get_offset(), task))  # add release event
+            self.queue.add_event(Event(RELEASE, self.t + task.get_offset(), task, self.t))  # add release event
 
         #print("     FIRST RUN queue = ", [(self.queue.get_el(i).get_id(), self.queue.get_el(i).get_task().get_id()) for i in range(self.queue.get_len())])
 
@@ -54,10 +54,10 @@ class Simulator:
             if job.get_processor() is not None:  # job assigned to a processor
                 cpu_print = [processor.get_id() for processor in job.get_processor()]
                 # print(self.t, self.last_t)
-                if len(job.get_processor()) > 1:
-                    job.execute((self.t - self.last_t)*len(job.get_processor())/len(self.scheduler.get_jobs_on_processor(job.get_processor()[0].get_id())))
-                else:
-                    job.execute(self.t - self.last_t)
+                if len(job.get_processor()) >= 1:
+                    processor_speed = sum(proc.get_speed() for proc in job.get_processor()) / len(self.scheduler.get_jobs_on_processor(job.get_processor()[0].get_id()))
+                    job.execute((self.t - self.last_t), processor_speed)
+
                 #print("     Job ", job.get_id(), " is done execution on CPU ", cpu_print,
                 #     "at time t = ", self.t)
 
@@ -81,6 +81,12 @@ class Simulator:
                 print("Event NEXT of task ", event.get_task().get_id(), "at time t = ", self.t)
                 self.treat_event_next()
 
+            for job in self.job_list:
+                if (self.t != self.last_t and event.get_id() != 2) or (self.t != self.queue.get_el(0).get_t() and event.get_id() != 2):
+                    #job.update_num_preemptions()
+                    pass
+                    #self.update_num_migrations()
+
             self.last_t = self.t
             return self.t
         else:
@@ -90,7 +96,7 @@ class Simulator:
         task = event.get_task()
         # Add next release
         new_release_time = self.t + task.get_period()
-        self.queue.add_event(Event(RELEASE, new_release_time, task))  # add release event for next job of same task
+        self.queue.add_event(Event(RELEASE, new_release_time, task, self.t))  # add release event for next job of same task
 
 
         self.scheduler.release_job(self.job_list, task, self.processors, self.t)
@@ -99,6 +105,7 @@ class Simulator:
         for job in self.job_list:
             job.reset_u()
             job.scale_u(self.scheduler.get_earliest_release(self.job_list, self.t, task) - self.t)
+            job.set_processor(None)
 
         self.job_list, interrupt_job = self.scheduler.reschedule(self.job_list, self.processors)
 
@@ -166,18 +173,19 @@ class Simulator:
                         job.get_id() == event.get_task().get_id() and event.get_id() == 2 for event in
                         self.queue.queue) == 0
                 if cond:
+                    joined_jobs = self.scheduler.get_jobs_on_processor(processors[0].get_id())
+
                     if len(processors) == 1:
                         processor_speed = processors[0].get_speed()
                     else:
-                        processor_speed = sum(proc.get_speed() for proc in processors)/len(processors)
+                        processor_speed = sum(proc.get_speed() for proc in processors)/len(joined_jobs)
 
-                    joined_jobs = self.scheduler.get_jobs_on_processor(processors[0].get_id())
                     if joined_jobs is not None:
                         joint_u = job.get_u()*len(joined_jobs)
-                        completion_time = self.t + (joint_u/processor_speed)/len(processors)
-                        completion_time = round(completion_time, 7)
+                        completion_time = self.t + (joint_u/processor_speed)/len(joined_jobs)
+                        #completion_time = round(completion_time, 7)
                     else:
                         #todo: get u or wcet?
                         completion_time = self.t + (job.get_wcet()/processor_speed)
                     # add completion time of task whose job is being executed
-                    self.queue.add_event(Event(COMPLETION, completion_time, self.task_list[job.get_priority()]))
+                    self.queue.add_event(Event(COMPLETION, completion_time, self.task_list[job.get_priority()], self.t))

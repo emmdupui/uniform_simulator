@@ -163,17 +163,25 @@ class Level_Scheduler(Scheduler):
                 lower_prio_index = running_job_index
                 while lower_prio_index < len(new_job_list) and new_job_list[lower_prio_index].get_processor() == running_job.get_processor():
                     lower_prio_index += 1
+
+                num_lower_prio_tasks = 0
+                i = lower_prio_index
+                while i < len(new_job_list) and new_job_list[i].get_processor() == new_job_list[lower_prio_index].get_processor():
+                    num_lower_prio_tasks += 1
+                    i += 1
+
                 # print("Lower prio index : ", lower_prio_index)
                 if lower_prio_index < len(new_job_list): # if there is a lower priority job
-                    running_job_speed = sum(proc.get_speed() for proc in running_job.get_processor())/len(running_job.get_processor())
+                    num_joined_tasks = len(self.get_jobs_on_processor(running_job.get_processor()[0].get_id()))
+                    running_job_speed = sum(proc.get_speed() for proc in running_job.get_processor())/num_joined_tasks
                     if new_job_list[lower_prio_index].get_processor() is not None:
-                        lower_prio_speed = sum(proc.get_speed() for proc in new_job_list[lower_prio_index].get_processor())/len(new_job_list[lower_prio_index].get_processor())
+                        lower_prio_speed = sum(proc.get_speed() for proc in new_job_list[lower_prio_index].get_processor())/num_lower_prio_tasks
                     else:
                         lower_prio_speed = 0
                     # print("Lower prio speed : ", lower_prio_speed)
                     if running_job_speed > lower_prio_speed:
                         next_interruption_time = (running_job.get_u() - new_job_list[lower_prio_index].get_u())/(running_job_speed - lower_prio_speed)
-                        next_interruption_time = round(next_interruption_time, 7)
+                        #next_interruption_time = round(next_interruption_time, 7)
                         if next_join[0] == -1 or next_interruption_time < next_join[0]:
                             next_join = (next_interruption_time, new_job_list[lower_prio_index])
         #print(next_join)
@@ -195,7 +203,7 @@ class Level_Scheduler(Scheduler):
             for i in range(len(occupied_processors),len(occupied_processors)+num_same_priority):
                 if i < len(self.jobs_on_processors) and job not in self.jobs_on_processors[i]:
                     self.jobs_on_processors[i].append(job)
-            # print("assign ", job.get_id(), job.get_processor()[0].get_id())
+            #print("assign ", job.get_id(), job.get_processor()[0].get_id())
         else:
             job.set_processor(None)
 

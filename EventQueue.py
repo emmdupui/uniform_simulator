@@ -40,11 +40,11 @@ class EventQueue:
         earlier_interrupt = False
         for event_index, event in enumerate(self.queue):
             if event.get_id() == 3:
-                if interrupt_job[0] < event.get_t():
+                if interrupt_job[0] < event.get_t() or event.get_set_t() == t:
                     del self.queue[event_index]
                 else:
                     earlier_interrupt = True
 
         if not earlier_interrupt:
-            event = Event(NEXT, t + interrupt_job[0], interrupt_job[1])
+            event = Event(NEXT, t + interrupt_job[0], interrupt_job[1], t)
             self.add_event(event)
