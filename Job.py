@@ -41,23 +41,26 @@ class Job:
 
     def update_num_preemptions(self):
         # for level algo when directly joined
-        if self.last_processor is None and self.last_processor != self.processor:
-            self.num_preemptions += len(self.processor)-1
-            print("HERE: ", len(self.processor)-1)
+        if self.last_processor is not None:
+            print(self.last_processor, self.processor)
+            if self.last_processor != self.processor or len(self.processor)>1:
+                # print("HERE for job : ", self.id, self.num_preemptions)
+                # not avoiding waterfall migrations (for level algo)
+                if not WATERFALL_MIGRATIONS_ENABLED:
+                    self.num_preemptions += len(self.processor)
+                    print("HERE2: ", len(self.processor))
 
-        elif self.processor is not None and (self.last_processor != self.processor or len(self.processor)>1):
-            # print("HERE for job : ", self.id, self.num_preemptions)
-            # not avoiding waterfall migrations (for level algo)
-            if not WATERFALL_MIGRATIONS_ENABLED:
-                self.num_preemptions += len(self.processor)
-                print("HERE2: ", len(self.processor))
-
-            # avoiding waterfall migrations (for level algo)
-            else:
-                if len(self.processor) > 1:
-                    self.num_preemptions += len(self.processor)-1
+                # avoiding waterfall migrations (for level algo)
                 else:
-                    self.num_preemptions += 1
+                    if len(self.processor) > 1:
+                        self.num_preemptions += len(self.processor)-1
+                    else:
+                        self.num_preemptions += 1
+
+        else:
+            if self.last_processor != self.processor and len(self.processor)>1:
+                self.num_preemptions += len(self.processor)-1
+                print("HERE: ", len(self.processor)-1)
 
     def update_num_migrations(self):
         instant_migration = self.last_processor is not None and self.processor is not None and self.last_processor != self.processor

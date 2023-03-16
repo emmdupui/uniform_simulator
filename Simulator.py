@@ -54,9 +54,11 @@ class Simulator:
             if job.get_processor() is not None:  # job assigned to a processor
                 cpu_print = [processor.get_id() for processor in job.get_processor()]
                 # print(self.t, self.last_t)
-                if len(job.get_processor()) >= 1:
+                if len(job.get_processor()) > 1:
                     processor_speed = sum(proc.get_speed() for proc in job.get_processor()) / len(self.scheduler.get_jobs_on_processor(job.get_processor()[0].get_id()))
                     job.execute((self.t - self.last_t), processor_speed)
+                else:
+                    job.execute((self.t - self.last_t), job.get_processor()[0].get_speed())
 
                 #print("     Job ", job.get_id(), " is done execution on CPU ", cpu_print,
                 #     "at time t = ", self.t)
@@ -83,7 +85,7 @@ class Simulator:
 
             for job in self.job_list:
                 if (self.t != self.last_t and event.get_id() != 2) or (self.t != self.queue.get_el(0).get_t() and event.get_id() != 2):
-                    #job.update_num_preemptions()
+                    job.update_num_preemptions()
                     pass
                     #self.update_num_migrations()
 
