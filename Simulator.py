@@ -52,7 +52,7 @@ class Simulator:
         self.processor_occupation = [[] for _ in self.processors]
         # compute job execution till now
         for job_index, job in enumerate(self.job_list):
-            if job.get_processor() is not None and job.get_u() > 0:  # job assigned to a processor
+            if job.get_processor() is not None and job.get_e() > 0:  # job assigned to a processor
                 processors = job.get_processor()[0]
                 self.processor_occupation[processors.get_id()] = self.scheduler.get_jobs_on_processor(processors.get_id())
                 cpu_print = [processor.get_id() for processor in job.get_processor()]
@@ -95,9 +95,11 @@ class Simulator:
         self.scheduler.release_job(self.job_list, task, self.processors, self.t)
         # print("     job_list = ", [self.job_list[i].get_id() for i in range(len(self.job_list))])
 
+        earliest_release_time = self.scheduler.get_earliest_release(self.job_list, self.t, task)
+        #if earliest_release_time != -1:
         for job in self.job_list:
-            job.reset_u()
-            job.scale_u(self.scheduler.get_earliest_release(self.job_list, self.t, task) - self.t)
+            job.reset_e()
+            job.scale_u(earliest_release_time - self.t)
             job.set_processor(None)
 
         self.job_list, interrupt_job = self.scheduler.reschedule(self.job_list, self.processors)
@@ -163,7 +165,7 @@ class Simulator:
                         job.get_id() == event.get_task().get_id() and event.get_id() == 2 for event in
                         self.queue.queue) == 0
                 else:
-                    cond = job.get_u() > 0 and sum(
+                    cond = job.get_e() > 0 and sum(
                         job.get_id() == event.get_task().get_id() and event.get_id() == 2 for event in
                         self.queue.queue) == 0
                 if cond:
@@ -175,7 +177,7 @@ class Simulator:
                         processor_speed = sum(proc.get_speed() for proc in processors)/len(joined_jobs)
 
                     if joined_jobs is not None:
-                        joint_u = job.get_u()*len(joined_jobs)
+                        joint_u = job.get_e() * len(joined_jobs)
                         completion_time = self.t + (joint_u/processor_speed)/len(joined_jobs)
                         #completion_time = round(completion_time, 7)
                     else:

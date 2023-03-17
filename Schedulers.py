@@ -66,13 +66,8 @@ class Scheduler:
         return None
 
     def get_earliest_release(self, job_list, t, task):
-        earliest_release = math.inf
-        if not job_list:
-            earliest_release = t + task.get_deadline()
-        for job in job_list:
-            if job.get_deadline() < earliest_release:
-                earliest_release = job.get_deadline()
-        return earliest_release
+        # no deadline partitioning
+        return math.inf
 
 class RM_Scheduler(Scheduler):
     def __init__(self):
@@ -135,8 +130,8 @@ class Level_Scheduler(Scheduler):
     @staticmethod
     def add_job(job_list: List[Job], job: Job):
         pos = binary_search(0, len(job_list) - 1,
-                            lambda j: job.get_u() >= job_list[j].get_u()
-                                      or ((job_list[j].get_u() == job.get_u()) and
+                            lambda j: job.get_e() >= job_list[j].get_e()
+                                      or ((job_list[j].get_e() == job.get_e()) and
                                           (job_list[j].get_id() < job.get_id()))
                             )
         job_list.insert(pos, job)
@@ -147,6 +142,14 @@ class Level_Scheduler(Scheduler):
         self.task_list = task_list
         self.jobs_on_processors = [[] for _ in self.processors]
 
+    def get_earliest_release(self, job_list, t, task):
+        earliest_release = math.inf
+        if not job_list:
+            earliest_release = t + task.get_deadline()
+        for job in job_list:
+            if job.get_deadline() < earliest_release:
+                earliest_release = job.get_deadline()
+        return earliest_release
 
     def reschedule(self, job_list: List[Job], processors) -> Tuple[
         List[Any], Union[Tuple, Tuple[Union[float, Any], Any]]]:
@@ -180,7 +183,7 @@ class Level_Scheduler(Scheduler):
                         lower_prio_speed = 0
                     # print("Lower prio speed : ", lower_prio_speed)
                     if running_job_speed > lower_prio_speed:
-                        next_interruption_time = (running_job.get_u() - new_job_list[lower_prio_index].get_u())/(running_job_speed - lower_prio_speed)
+                        next_interruption_time = (running_job.get_e() - new_job_list[lower_prio_index].get_e()) / (running_job_speed - lower_prio_speed)
                         #next_interruption_time = round(next_interruption_time, 7)
                         if next_join[0] == -1 or next_interruption_time < next_join[0]:
                             next_join = (next_interruption_time, new_job_list[lower_prio_index])
@@ -190,13 +193,13 @@ class Level_Scheduler(Scheduler):
     def assign_processor(self, job: Job, job_list: List[Job], processor_list: List[Cpu]):
         occupied_processors = set()
         search_index = 0  # index of first job in jo_list having the same wcet
-        while job_list[search_index].get_u() > job.get_u():
+        while job_list[search_index].get_e() > job.get_e():
             occupied_processors = occupied_processors.union(job_list[search_index].get_processor())
             search_index += 1
 
         num_same_priority = 0
         if len(occupied_processors) < len(processor_list):
-            while search_index < len(job_list) and job_list[search_index].get_u() == job.get_u():
+            while search_index < len(job_list) and job_list[search_index].get_e() == job.get_e():
                 num_same_priority += 1
                 search_index += 1
             job.set_processor(processor_list[len(occupied_processors):len(occupied_processors)+num_same_priority])
