@@ -1,4 +1,4 @@
-WATERFALL_MIGRATIONS_ENABLED = True
+WATERFALL_MIGRATIONS_ENABLED = False
 
 
 class Job:
@@ -105,8 +105,8 @@ class Job:
 
     def get_num_preemptions(self):
         self.update_num_preemptions()
-        print(self.processor_history, )
-        print("RES", self.num_preemptions, self.num_migrations)
+        #print(self.processor_history, )
+        #print("RES", self.num_preemptions, self.num_migrations)
         return self.num_preemptions
 
     def get_num_migrations(self):

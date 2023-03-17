@@ -1,3 +1,5 @@
+import math
+
 from Job import Job
 from EventQueue import EventQueue
 from Schedulers import Scheduler
@@ -96,11 +98,14 @@ class Simulator:
         # print("     job_list = ", [self.job_list[i].get_id() for i in range(len(self.job_list))])
 
         earliest_release_time = self.scheduler.get_earliest_release(self.job_list, self.t, task)
-        #if earliest_release_time != -1:
-        for job in self.job_list:
-            job.reset_e()
-            job.scale_u(earliest_release_time - self.t)
-            job.set_processor(None)
+        if earliest_release_time != math.inf:
+            for job in self.job_list:
+                job.reset_e()
+                job.scale_u(earliest_release_time - self.t)
+                job.set_processor(None)
+        else:
+            for job in self.job_list:
+                job.scale_u(earliest_release_time - self.t)
 
         self.job_list, interrupt_job = self.scheduler.reschedule(self.job_list, self.processors)
 
@@ -117,7 +122,7 @@ class Simulator:
                 task.add_num_preempts(job.get_num_preemptions())
                 task.add_num_migrations(job.get_num_migrations())
                 del self.job_list[job_index]
-            job.set_processor(None)
+                job.set_processor(None)
                 #print("     job_list = ", [self.job_list[i].get_id() for i in range(len(self.job_list))])
 
         if self.no_deadlines_missed:
