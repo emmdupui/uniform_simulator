@@ -49,26 +49,23 @@ class Simulator:
     def treat_event(self):
         event = self.queue.get_head()
         self.t = event.get_t()  # update common time to event time
+        self.processor_occupation = [[] for _ in self.processors]
         # compute job execution till now
         for job_index, job in enumerate(self.job_list):
-            if job.get_processor() is not None:  # job assigned to a processor
+            if job.get_processor() is not None and job.get_u() > 0:  # job assigned to a processor
+                processors = job.get_processor()[0]
+                self.processor_occupation[processors.get_id()] = self.scheduler.get_jobs_on_processor(processors.get_id())
                 cpu_print = [processor.get_id() for processor in job.get_processor()]
                 # print(self.t, self.last_t)
                 if len(job.get_processor()) > 1:
-                    processor_speed = sum(proc.get_speed() for proc in job.get_processor()) / len(self.scheduler.get_jobs_on_processor(job.get_processor()[0].get_id()))
-                    job.execute((self.t - self.last_t), processor_speed)
+                    processor_speed = sum(proc.get_speed() for proc in job.get_processor()) / len(self.processor_occupation[processors.get_id()])
+                    job.execute((self.t - self.last_t), processor_speed, len(self.scheduler.get_jobs_on_processor(processors.get_id())))
                 else:
-                    job.execute((self.t - self.last_t), job.get_processor()[0].get_speed())
+                    job.execute((self.t - self.last_t), job.get_processor()[0].get_speed(), 1)
 
                 #print("     Job ", job.get_id(), " is done execution on CPU ", cpu_print,
                 #     "at time t = ", self.t)
 
-        """
-        print("--------------------------------------------")
-        for job in self.job_list:
-            print(job.get_id())
-        print("--------------------------------------------")
-        """
         for job in self.job_list:
             self.check_deadline(job)
 
@@ -82,12 +79,6 @@ class Simulator:
             else:
                 print("Event NEXT of task ", event.get_task().get_id(), "at time t = ", self.t)
                 self.treat_event_next()
-
-            for job in self.job_list:
-                if (self.t != self.last_t and event.get_id() != 2) or (self.t != self.queue.get_el(0).get_t() and event.get_id() != 2):
-                    job.update_num_preemptions()
-                    pass
-                    #self.update_num_migrations()
 
             self.last_t = self.t
             return self.t
@@ -124,6 +115,7 @@ class Simulator:
                 task.add_num_preempts(job.get_num_preemptions())
                 task.add_num_migrations(job.get_num_migrations())
                 del self.job_list[job_index]
+            job.set_processor(None)
                 #print("     job_list = ", [self.job_list[i].get_id() for i in range(len(self.job_list))])
 
         if self.no_deadlines_missed:

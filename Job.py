@@ -1,19 +1,21 @@
-WATERFALL_MIGRATIONS_ENABLED = False
+WATERFALL_MIGRATIONS_ENABLED = True
+
 
 class Job:
     def __init__(self, id: int, release_time: int, deadline: int, wcet: int, priority: int):
         self.id = id
         self.release_time = release_time
         self.deadline = deadline
-        self.period = deadline-self.release_time
+        self.period = deadline - self.release_time
         self.wcet = wcet
-        self.u = self.wcet/self.period
+        self.u = self.wcet / self.period
         self.initial_u = self.u
         self.last_processor = None
         self.processor = None
         self.num_preemptions = 0
         self.num_migrations = 0
         self.priority = priority
+        self.processor_history = []
 
     def get_u(self):
         return self.u
@@ -39,78 +41,73 @@ class Job:
     def get_processor(self):
         return self.processor
 
-    def update_num_preemptions(self):
-        # for level algo when directly joined
-        if self.last_processor is not None:
-            print(self.last_processor, self.processor)
-            if self.last_processor != self.processor or len(self.processor)>1:
-                # print("HERE for job : ", self.id, self.num_preemptions)
-                # not avoiding waterfall migrations (for level algo)
-                if not WATERFALL_MIGRATIONS_ENABLED:
-                    self.num_preemptions += len(self.processor)
-                    print("HERE2: ", len(self.processor))
-
-                # avoiding waterfall migrations (for level algo)
-                else:
-                    if len(self.processor) > 1:
-                        self.num_preemptions += len(self.processor)-1
-                    else:
-                        self.num_preemptions += 1
-
+    def compute_num_migrations_or_preemptions(self, processor):
+        if WATERFALL_MIGRATIONS_ENABLED:
+            num_different_processor = 0
+            speeds = []
+            for cpu in processor[0]:
+                if cpu.get_speed() not in speeds:
+                    num_different_processor += 1
+                    speeds.append(cpu.get_speed())
+            return num_different_processor
         else:
-            if self.last_processor != self.processor and len(self.processor)>1:
-                self.num_preemptions += len(self.processor)-1
-                print("HERE: ", len(self.processor)-1)
+            return len(processor[0])
 
-    def update_num_migrations(self):
-        instant_migration = self.last_processor is not None and self.processor is not None and self.last_processor != self.processor
-        # TODO : ? later_migration = self.last_processor is not None and processor is not None and self.last_processor != processor
+    def update_num_preemptions(self):
+        last_processor = [None, -1]
+        for processor_index, processor in enumerate(self.processor_history):
+            different_processor = processor[0] != self.processor_history[processor_index - 1][0]
+            different_processor_occupation = processor[1] != self.processor_history[processor_index - 1][1]
 
-        # not avoiding waterfall migrations (for level algo)
-        if instant_migration:
-            if not WATERFALL_MIGRATIONS_ENABLED:
-                self.num_migrations += len(self.processor)
-            else:
-                # avoiding waterfall migrations (for level algo)
-                if instant_migration:
-                    if len(self.processor) > 1:
-                        self.num_migrations += len(self.processor) - 1
-                    else:
-                        self.num_migrations += 1
+            num_interruptions = self.compute_num_migrations_or_preemptions(processor)
+
+            # Only used by level algorithm
+            cond = len(processor[0]) < len(self.processor_history[processor_index - 1][0])  # restart of task -> runs on less processors
+            if ((processor_index == 0 or self.processor_history[processor_index - 1][1] == 1) or cond) and (len(processor[0]) >= 1):
+                # One less preemption as the first appearance on a processor is not a preemption
+                self.num_preemptions += num_interruptions - 1
+                if processor[0] != last_processor[0] or processor[1] != last_processor[1]:
+                    self.num_migrations += num_interruptions - 1
+
+            elif processor_index != 0:
+                if different_processor or (not different_processor and different_processor_occupation):
+                    self.num_preemptions += num_interruptions
+                    if processor[0] != last_processor[0] or processor[1] != last_processor[1]:
+                        self.num_migrations += num_interruptions
+
+            if processor[0] is not None:
+                last_processor = processor
 
     def set_processor(self, processor):
-        #self.update_num_preemptions(processor)
-
-        # self.update_num_migrations(processor)
-
         self.last_processor = self.processor  # remembers cpu on which he last ran on
-
         self.processor = processor
 
     def set_priority(self, priority: int):
         self.priority = priority
 
-    def execute(self, t: int, processor_speed):
+    def execute(self, t: int, processor_speed, num_joined_jobs):
         if (t) > 0:
-            self.wcet = self.wcet - t*processor_speed
+            self.wcet = self.wcet - t * processor_speed
             self.wcet = round(self.wcet, 7)
-            self.u = self.u - t*processor_speed
+            self.u = self.u - t * processor_speed
             self.u = round(self.u, 7)
             # if self.processor is not None:
-
+            self.processor_history.append((self.processor, num_joined_jobs))
             # print(self.wcet)
         if self.wcet == 0:
             self.processor = None
+            self.processor_history.append(([], 0))
 
         self.last_processor = self.processor  # remembers cpu on which he last ran on
 
     def get_num_preemptions(self):
+        self.update_num_preemptions()
+        #print(self.processor_history, )
+        #print("RES", self.num_preemptions, self.num_migrations)
         return self.num_preemptions
 
     def get_num_migrations(self):
         return self.num_migrations
 
     def scale_u(self, earliest_release):
-        self.u = self.initial_u*earliest_release
-
-
+        self.u = self.initial_u * earliest_release
