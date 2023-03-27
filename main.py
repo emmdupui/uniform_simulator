@@ -21,7 +21,7 @@ def update_values(simulator, algo_num):
 
 def run_all(f, scheduler, algo_num):
     task_list = task_file_parser(f)
-    cpus = [Cpu(0, 2), Cpu(1, 1)]
+    cpus = [Cpu(0, 1.2), Cpu(1, 0.8)]
     #cpus = [Cpu(0, 2), Cpu(1, 1), Cpu(2, 1), Cpu(3, 1)]
 
 

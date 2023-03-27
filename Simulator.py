@@ -59,8 +59,9 @@ class Simulator:
                 self.processor_occupation[processors.get_id()] = self.scheduler.get_jobs_on_processor(processors.get_id())
                 cpu_print = [processor.get_id() for processor in job.get_processor()]
                 # print(self.t, self.last_t)
-                if len(job.get_processor()) > 1:
+                if self.processor_occupation[processors.get_id()] is not None:
                     processor_speed = sum(proc.get_speed() for proc in job.get_processor()) / len(self.processor_occupation[processors.get_id()])
+                    print(processor_speed)
                     job.execute((self.t - self.last_t), processor_speed, len(self.scheduler.get_jobs_on_processor(processors.get_id())))
                 else:
                     job.execute((self.t - self.last_t), job.get_processor()[0].get_speed(), 1)
@@ -105,7 +106,8 @@ class Simulator:
                 job.set_processor(None)
         else:
             for job in self.job_list:
-                job.scale_u(earliest_release_time - self.t)
+                #  TODO if job.get_wcet() <= 0: ????
+                    job.scale_u(earliest_release_time - self.t)
 
         self.job_list, interrupt_job = self.scheduler.reschedule(self.job_list, self.processors)
 
