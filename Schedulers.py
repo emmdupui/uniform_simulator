@@ -149,6 +149,9 @@ class Level_Scheduler(Scheduler):
         self.sort_processors()  # sort by decreasing speeds
         self.task_list = task_list
         self.jobs_on_processors = [[] for _ in self.processors]
+        self.task_list = sorted(task_list, key=lambda task: task.get_deadline())
+        for index, task in enumerate(self.task_list):
+            task.set_id(index)
 
     def get_earliest_release(self, job_list, t, task):
         earliest_release = math.inf
@@ -177,7 +180,7 @@ class Level_Scheduler(Scheduler):
 
                 num_lower_prio_tasks = 0
                 i = lower_prio_index
-                while i < len(new_job_list) and new_job_list[i].get_processor() == new_job_list[lower_prio_index].get_processor():
+                while i < len(new_job_list) and round(new_job_list[i].get_e(),6) == round(new_job_list[lower_prio_index].get_e(), 6):
                     num_lower_prio_tasks += 1
                     i += 1
 
@@ -191,7 +194,7 @@ class Level_Scheduler(Scheduler):
                         lower_prio_speed = 0
                     # print("Lower prio speed : ", lower_prio_speed)
                     if running_job_speed > lower_prio_speed:
-                        next_interruption_time = (running_job.get_e() - new_job_list[lower_prio_index].get_e()) / (running_job_speed - lower_prio_speed)
+                        next_interruption_time = (running_job.get_e()*num_joined_tasks - (new_job_list[lower_prio_index].get_e())*num_lower_prio_tasks) / (running_job_speed - lower_prio_speed)
                         #next_interruption_time = round(next_interruption_time, 7)
                         if next_join[0] == -1 or next_interruption_time < next_join[0]:
                             next_join = (next_interruption_time, new_job_list[lower_prio_index])
@@ -200,14 +203,14 @@ class Level_Scheduler(Scheduler):
 
     def assign_processor(self, job: Job, job_list: List[Job], processor_list: List[Cpu]):
         occupied_processors = set()
-        search_index = 0  # index of first job in jo_list having the same wcet
-        while job_list[search_index].get_e() > job.get_e():
+        search_index = 0  # index of first job in jo_list having the same e
+        while round(job_list[search_index].get_e(),6) > round(job.get_e(),6) and job_list[search_index].get_processor() is not None:
             occupied_processors = occupied_processors.union(job_list[search_index].get_processor())
             search_index += 1
 
         num_same_priority = 0
         if len(occupied_processors) < len(processor_list):
-            while search_index < len(job_list) and job_list[search_index].get_e() == job.get_e():
+            while search_index < len(job_list) and round(job_list[search_index].get_e(),6) == round(job.get_e(),6):
                 num_same_priority += 1
                 search_index += 1
             job.set_processor(processor_list[len(occupied_processors):len(occupied_processors)+num_same_priority])

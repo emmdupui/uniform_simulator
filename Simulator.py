@@ -57,11 +57,10 @@ class Simulator:
             if job.get_processor() is not None and job.get_e() > 0:  # job assigned to a processor
                 processors = job.get_processor()[0]
                 self.processor_occupation[processors.get_id()] = self.scheduler.get_jobs_on_processor(processors.get_id())
-                cpu_print = [processor.get_id() for processor in job.get_processor()]
+                #cpu_print = [processor.get_id() for processor in job.get_processor()]
                 # print(self.t, self.last_t)
-                if self.processor_occupation[processors.get_id()] is not None:
+                if self.processor_occupation[processors.get_id()] is not None and len(self.processor_occupation[processors.get_id()]):
                     processor_speed = sum(proc.get_speed() for proc in job.get_processor()) / len(self.processor_occupation[processors.get_id()])
-                    print(processor_speed)
                     job.execute((self.t - self.last_t), processor_speed, len(self.scheduler.get_jobs_on_processor(processors.get_id())))
                 else:
                     job.execute((self.t - self.last_t), job.get_processor()[0].get_speed(), 1)
@@ -123,9 +122,10 @@ class Simulator:
                 self.check_deadline(job)
                 task.add_num_preempts(job.get_num_preemptions())
                 task.add_num_migrations(job.get_num_migrations())
+                #print("PREEMPTIONS ", job.processor_history, job.get_num_preemptions())
                 del self.job_list[job_index]
                 job.set_processor(None)
-                #print("     job_list = ", [self.job_list[i].get_id() for i in range(len(self.job_list))])
+                print("     job_list = ", [self.job_list[i].get_id() for i in range(len(self.job_list))])
 
         if self.no_deadlines_missed:
             # reschedule
@@ -140,7 +140,6 @@ class Simulator:
         self.job_list, interrupt_job = self.scheduler.reschedule(self.job_list, self.processors)
 
         self.update_queue(interrupt_job)
-
         #print("     queue = ",
         #      [(self.queue.get_el(i).get_id(), self.queue.get_el(i).get_task().get_id(), self.queue.get_el(i).get_t())
         #       for i in range(self.queue.get_len())],
@@ -184,11 +183,16 @@ class Simulator:
                         processor_speed = sum(proc.get_speed() for proc in processors)/len(joined_jobs)
 
                     if joined_jobs is not None:
-                        joint_u = job.get_e() * len(joined_jobs)
-                        completion_time = self.t + (joint_u/processor_speed)/len(joined_jobs)
+                        joint_u = 0
+                        for j in joined_jobs:
+                            joint_u += j.get_e()
+                        #completion_time = self.t + (joint_u/processor_speed)/len(joined_jobs) ????????????
+                        completion_time = self.t + (joint_u/processor_speed)
+
                         #completion_time = round(completion_time, 7)
                     else:
                         #todo: get u or wcet?
                         completion_time = self.t + (job.get_wcet()/processor_speed)
+
                     # add completion time of task whose job is being executed
                     self.queue.add_event(Event(COMPLETION, completion_time, self.task_list[job.get_priority()], self.t))
