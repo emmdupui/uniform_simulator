@@ -91,9 +91,7 @@ class Job:
     def execute(self, t: int, processor_speed, num_joined_jobs):
         if (t) > 0:
             self.wcet = self.wcet - t * processor_speed
-            self.wcet = round(self.wcet, 7)
             self.e = self.e - t * processor_speed
-            self.e = round(self.e, 7)
             # if self.processor is not None:
             self.processor_history.append((self.processor, num_joined_jobs))
             # print(self.wcet)

@@ -31,7 +31,7 @@ class EventQueue:
 
         event_index = 0
         while event_index < len(self.queue):
-            if self.queue[event_index].get_id() == 2 and self.queue[event_index].get_t() != t:
+            if self.queue[event_index].get_id() == 2 and round(self.queue[event_index].get_t(),6) != round(t,6):
                 del self.queue[event_index]
             else:
                 event_index += 1

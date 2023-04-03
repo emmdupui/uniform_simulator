@@ -138,8 +138,8 @@ class Level_Scheduler(Scheduler):
     @staticmethod
     def add_job(job_list: List[Job], job: Job):
         pos = binary_search(0, len(job_list) - 1,
-                            lambda j: job.get_e() >= job_list[j].get_e()
-                                      or ((job_list[j].get_e() == job.get_e()) and
+                            lambda j: round(job.get_e(), 6) >= round(job_list[j].get_e(),6)
+                                      or ((round(job.get_e(), 6) == round(job_list[j].get_e(),6)) and
                                           (job_list[j].get_id() < job.get_id()))
                             )
         job_list.insert(pos, job)
@@ -149,7 +149,7 @@ class Level_Scheduler(Scheduler):
         self.sort_processors()  # sort by decreasing speeds
         self.task_list = task_list
         self.jobs_on_processors = [[] for _ in self.processors]
-        self.task_list = sorted(task_list, key=lambda task: task.get_deadline())
+        self.task_list = sorted(task_list, key=lambda task: task.get_wcet()/task.get_deadline())[::-1]
         for index, task in enumerate(self.task_list):
             task.set_id(index)
 
@@ -175,7 +175,7 @@ class Level_Scheduler(Scheduler):
         for running_job_index, running_job in enumerate(new_job_list):
             if running_job.get_processor() is not None:
                 lower_prio_index = running_job_index
-                while lower_prio_index < len(new_job_list) and new_job_list[lower_prio_index].get_processor() == running_job.get_processor():
+                while lower_prio_index < len(new_job_list) and round(new_job_list[lower_prio_index].get_e(),6) == round(running_job.get_e(),6):
                     lower_prio_index += 1
 
                 num_lower_prio_tasks = 0
@@ -194,7 +194,7 @@ class Level_Scheduler(Scheduler):
                         lower_prio_speed = 0
                     # print("Lower prio speed : ", lower_prio_speed)
                     if running_job_speed > lower_prio_speed:
-                        next_interruption_time = (running_job.get_e()*num_joined_tasks - (new_job_list[lower_prio_index].get_e())*num_lower_prio_tasks) / (running_job_speed - lower_prio_speed)
+                        next_interruption_time = (running_job.get_e() - new_job_list[lower_prio_index].get_e()) / (running_job_speed - lower_prio_speed)
                         #next_interruption_time = round(next_interruption_time, 7)
                         if next_join[0] == -1 or next_interruption_time < next_join[0]:
                             next_join = (next_interruption_time, new_job_list[lower_prio_index])
@@ -209,7 +209,7 @@ class Level_Scheduler(Scheduler):
             search_index += 1
 
         num_same_priority = 0
-        if len(occupied_processors) < len(processor_list):
+        if len(occupied_processors) < len(processor_list) or job.get_processor() is not None:
             while search_index < len(job_list) and round(job_list[search_index].get_e(),6) == round(job.get_e(),6):
                 num_same_priority += 1
                 search_index += 1

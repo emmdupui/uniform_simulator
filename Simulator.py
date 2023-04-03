@@ -6,7 +6,7 @@ from Schedulers import Scheduler
 from typing import List
 from Event import *
 
-RUNNING_TIME = 10
+RUNNING_TIME = 1000
 
 class Simulator:
     def __init__(self, scheduler: Scheduler):
@@ -54,7 +54,7 @@ class Simulator:
         self.processor_occupation = [[] for _ in self.processors]
         # compute job execution till now
         for job_index, job in enumerate(self.job_list):
-            if job.get_processor() is not None and job.get_e() > 0:  # job assigned to a processor
+            if job.get_processor() is not None and round(job.get_e(),6) > 0:  # job assigned to a processor
                 processors = job.get_processor()[0]
                 self.processor_occupation[processors.get_id()] = self.scheduler.get_jobs_on_processor(processors.get_id())
                 #cpu_print = [processor.get_id() for processor in job.get_processor()]
@@ -106,7 +106,7 @@ class Simulator:
         else:
             for job in self.job_list:
                 #  TODO if job.get_wcet() <= 0: ????
-                    job.scale_u(earliest_release_time - self.t)
+                job.scale_u(earliest_release_time - self.t)
 
         self.job_list, interrupt_job = self.scheduler.reschedule(self.job_list, self.processors)
 
@@ -118,7 +118,7 @@ class Simulator:
     def treat_event_completion(self, event):
         task = event.get_task()
         for job_index, job in enumerate(self.job_list):
-            if job.get_id() == task.get_id() and job.get_wcet() <= 0:
+            if job.get_id() == task.get_id() and round(job.get_wcet(),6) <= 0:
                 self.check_deadline(job)
                 task.add_num_preempts(job.get_num_preemptions())
                 task.add_num_migrations(job.get_num_migrations())
@@ -146,7 +146,7 @@ class Simulator:
         #      " at time t = ", self.t)
 
     def check_deadline(self, job: Job):
-        if job.get_deadline() < self.t:
+        if job.get_deadline() < self.t and round(job.get_wcet(),7) > 0:
             self.no_deadlines_missed = False
             print("DEADLINE MISSED at time t = ", job.get_deadline(), "by job ", job.get_id())
 
@@ -167,31 +167,30 @@ class Simulator:
                 joined_jobs = self.scheduler.get_jobs_on_processor(processors[0].get_id())
 
                 if joined_jobs is None:  # not level algo
-                    cond = job.get_wcet() > 0 and sum(
+                    cond = round(job.get_wcet(),6) > 0 and sum(
                         job.get_id() == event.get_task().get_id() and event.get_id() == 2 for event in
                         self.queue.queue) == 0
                 else:
-                    cond = job.get_e() > 0 and sum(
+                    cond = round(job.get_e(),6) > 0 and sum(
                         job.get_id() == event.get_task().get_id() and event.get_id() == 2 for event in
                         self.queue.queue) == 0
                 if cond:
                     joined_jobs = self.scheduler.get_jobs_on_processor(processors[0].get_id())
 
-                    if len(processors) == 1:
+                    if joined_jobs is None or len(joined_jobs) == 1:
                         processor_speed = processors[0].get_speed()
                     else:
                         processor_speed = sum(proc.get_speed() for proc in processors)/len(joined_jobs)
 
                     if joined_jobs is not None:
-                        joint_u = 0
-                        for j in joined_jobs:
-                            joint_u += j.get_e()
-                        #completion_time = self.t + (joint_u/processor_speed)/len(joined_jobs) ????????????
-                        completion_time = self.t + (joint_u/processor_speed)
+                        # completion_time = self.t + (round(job.get_e(),6)/processor_speed)
+                        completion_time = self.t + (job.get_e()/processor_speed)
+
 
                         #completion_time = round(completion_time, 7)
                     else:
                         #todo: get u or wcet?
+                        # completion_time = self.t + (round(job.get_wcet(),6)/processor_speed)
                         completion_time = self.t + (job.get_wcet()/processor_speed)
 
                     # add completion time of task whose job is being executed
