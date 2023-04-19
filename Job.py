@@ -1,5 +1,6 @@
-WATERFALL_MIGRATIONS_ENABLED = False
+WATERFALL_MIGRATIONS_ENABLED = True
 
+# TODO: bad computation of migrations
 
 class Job:
     def __init__(self, id: int, release_time: int, deadline: int, wcet: int, priority: int):
@@ -40,6 +41,9 @@ class Job:
 
     def get_processor(self):
         return self.processor
+
+    def add_None_history(self):
+        self.processor_history.append(([], 0))
 
     def compute_num_migrations_or_preemptions(self, processor):
         if WATERFALL_MIGRATIONS_ENABLED:

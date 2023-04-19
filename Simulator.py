@@ -37,7 +37,7 @@ class Simulator:
         #print("     FIRST RUN queue = ", [(self.queue.get_el(i).get_id(), self.queue.get_el(i).get_task().get_id()) for i in range(self.queue.get_len())])
 
         # while len(self.queue.get_len()) > 0 and self.no_deadlines_missed:
-        while self.t <= RUNNING_TIME and self.no_deadlines_missed:
+        while self.queue.get_el(0).get_t() <= RUNNING_TIME and self.no_deadlines_missed:
             self.treat_event()
             #print("     queue = ", [(self.queue.get_el(i).get_id(), self.queue.get_el(i).get_task().get_id(),self.queue.get_el(i).get_t()) for i in range(self.queue.get_len())],
             #      " at time t = ", self.t)
@@ -67,19 +67,21 @@ class Simulator:
 
                 #print("     Job ", job.get_id(), " is done execution on CPU ", cpu_print,
                 #     "at time t = ", self.t)
+            elif self.t - self.last_t != 0:
+                job.add_None_history()
 
         for job in self.job_list:
             self.check_deadline(job)
 
         if self.no_deadlines_missed:
             if event.get_id() == RELEASE:
-                print("Event RELEASE of task ", event.get_task().get_id(), "at time t = ", self.t)
+                #print("Event RELEASE of task ", event.get_task().get_id(), "at time t = ", self.t)
                 self.treat_event_release(event)
             elif event.get_id() == COMPLETION:
-                print("Event COMPLETION of task ", event.get_task().get_id(), "at time t = ", self.t)
+                #print("Event COMPLETION of task ", event.get_task().get_id(), "at time t = ", self.t)
                 self.treat_event_completion(event)
             else:
-                print("Event NEXT of task ", event.get_task().get_id(), "at time t = ", self.t)
+                #print("Event NEXT of task ", event.get_task().get_id(), "at time t = ", self.t)
                 self.treat_event_next()
 
             self.last_t = self.t
@@ -125,7 +127,7 @@ class Simulator:
                 #print("PREEMPTIONS ", job.processor_history, job.get_num_preemptions())
                 del self.job_list[job_index]
                 job.set_processor(None)
-                print("     job_list = ", [self.job_list[i].get_id() for i in range(len(self.job_list))])
+                #print("     job_list = ", [self.job_list[i].get_id() for i in range(len(self.job_list))])
 
         if self.no_deadlines_missed:
             # reschedule
@@ -177,7 +179,7 @@ class Simulator:
                 if cond:
                     joined_jobs = self.scheduler.get_jobs_on_processor(processors[0].get_id())
 
-                    if joined_jobs is None or len(joined_jobs) == 1:
+                    if joined_jobs is None or len(joined_jobs) <= 1:
                         processor_speed = processors[0].get_speed()
                     else:
                         processor_speed = sum(proc.get_speed() for proc in processors)/len(joined_jobs)

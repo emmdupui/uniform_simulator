@@ -46,6 +46,6 @@ class EventQueue:
                 else:
                     earlier_interrupt = True
 
-        if not earlier_interrupt and round(interrupt_job[0], 6) > 0:
+        if not earlier_interrupt and round(interrupt_job[0], 7) > 0:
             event = Event(NEXT, t + interrupt_job[0], interrupt_job[1], t)
             self.add_event(event)

@@ -6,6 +6,8 @@ class Cpu:
 
     def get_id(self):
         return self.id
+    def set_id(self, id):
+        self.id = id
 
     def get_speed(self):
         return self.speed

@@ -2,7 +2,7 @@
 function [x,v] = task_generation(n, m, s, a, b, r, speed)
 
 T_min = 10;
-T_max = 50;
+T_max = 500;
 
 
 for i = 1:r
