@@ -57,12 +57,13 @@ def plot(res):
 
 
 def run_all_schedulers(file, cpu_set):
+
     #print()
     #print(" ------------------RM-----------------------")
     #print()
     rm_scheduler = RM_Scheduler()
     run_all(file, cpu_set, rm_scheduler, 0)
-    
+    """
     #print()
     #print(" ------------------EDF----------------------")
     #print()
@@ -87,13 +88,14 @@ def run_all_schedulers(file, cpu_set):
     edf_DU_IS_FF_scheduler = EDF_DU_IS_FF_Scheduler()
     run_all(file, cpu_set, edf_DU_IS_FF_scheduler, 4)
 
-    """
+    
     print()
     print(" ---------------------LEVEL-------------------------")
     print()
     level_scheduler = Level_Scheduler()
     run_all(file, cpu_set, level_scheduler, 5)
     """
+
 
 def plot_cpu_rep():
     preemptions = [[] for _ in range(6)]
@@ -139,7 +141,9 @@ def generate_task_sets(speeds):
     oct.task_generation(TASK_SET_SIZE, 1, sum(speeds), 0.1, max(speeds), NUM_TASK_SETS, TOTAL_UTILIZATION[2])
 
 def run_results(i, cpu_set):
-    directory = 'tasks/tasks_' + str(CPU_SET_SIZES[i])
+    #directory = 'tasks/tasks_' + str(CPU_SET_SIZES[i])
+    directory = 'tasks/tasks_' + str(i)
+
     if not os.path.exists(directory):
         # if the demo_folder directory is not present
         # then create it.
@@ -151,7 +155,9 @@ def run_results(i, cpu_set):
     for i in range(len(cpu_set)):
         cpu_set[i] = Cpu(cpu_set[i][0], cpu_set[i][1])
 
+    print(directory, files)
     for filename in files:
+        print(filename)
         f = os.path.join(directory, filename)
         #print(directory, filename)
         # checking if it is a file
@@ -175,4 +181,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     """
 
-    plot_cpu_rep()
+    #plot_cpu_rep()
+
+    cpu_set, speeds = [(0, 2), (1, 2)], [2,2]
+    run_results(0, cpu_set)
