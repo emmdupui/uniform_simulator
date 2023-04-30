@@ -14,9 +14,9 @@ deadlines_missed = [0 for _ in range(6)]
 iterations = [0 for _ in range(6)]
 tot_iterations = [0 for _ in range(6)]
 
-NUM_TASK_SETS = 11
+NUM_TASK_SETS = 40
 NUM_CPU_SETS = 11
-TASK_SET_SIZE = 50
+TASK_SET_SIZE = 90
 CPU_SET_SIZES = [2 ** i for i in range(1,7)]
 TOTAL_UTILIZATION = CPU_SET_SIZES
 
@@ -63,7 +63,7 @@ def run_all_schedulers(file, cpu_set):
     #print()
     rm_scheduler = RM_Scheduler()
     run_all(file, cpu_set, rm_scheduler, 0)
-    """
+
     #print()
     #print(" ------------------EDF----------------------")
     #print()
@@ -89,39 +89,48 @@ def run_all_schedulers(file, cpu_set):
     run_all(file, cpu_set, edf_DU_IS_FF_scheduler, 4)
 
     
-    print()
-    print(" ---------------------LEVEL-------------------------")
-    print()
+    #print()
+    #print(" ---------------------LEVEL-------------------------")
+    #print()
     level_scheduler = Level_Scheduler()
     run_all(file, cpu_set, level_scheduler, 5)
-    """
+
 
 
 def plot_cpu_rep():
     preemptions = [[] for _ in range(6)]
     migrations = [[] for _ in range(6)]
     feasibilities = [[] for _ in range(6)]
-    cpu_size = CPU_SET_SIZES[2]
-    for num_repetitions in range(10, NUM_CPU_SETS, 10):
-    #for num_repetitions in range(1, 2):
-        print("Num repetiton = ", num_repetitions)
-        res = [[0, 0, 0] for _ in range(6)]
-        for i in range(num_repetitions):
-            print("repetition ", i)
-            cpu_set, speeds = generate_cpu_tasks(TOTAL_UTILIZATION[2], cpu_size, 10, 0.5)
-            #cpu_set, speeds = [(0, 2), (1, 2)], [2,2]
-            generate_task_sets(speeds)
-            cpu_set = list(cpu_set)
-            #print(cpu_set)
+    cpu_size = 10
 
-            res = np.add(res, run_results(2, cpu_set))
-        res = np.divide(res, num_repetitions)
+    #for num_repetitions in range(10, NUM_CPU_SETS, 10):
+    #res = [[0, 0, 0] for _ in range(6)]
+    #for i in range(NUM_CPU_SETS):
+    #print("repetition ", i)
+    cpu_set, speeds = generate_cpu_tasks(cpu_size, cpu_size, 10, 0.5)
+    #cpu_set, speeds = [(0, 2), (1, 2)], [2,2]
 
-        for i in range(6):
-            preemptions[i].append(res[i][0])
-            migrations[i].append(res[i][1])
-            feasibilities[i].append(res[i][2])
+    directory = 'tasks/tasks_' + str(cpu_size)
+    #directory = '/home/users/s/i/sirenard/emma/tasks/tasks_' + str(cpu_size)
+    if not os.path.exists(directory):
+        # if the demo_folder directory is not present
+        # then create it.
+        os.makedirs(directory, exist_ok=True)
+    generate_task_sets(speeds)
+    cpu_set = list(cpu_set)
+    #print(cpu_set)
 
+
+    return run_results(cpu_size, cpu_set)
+        #res = np.add(res, run_results(2, cpu_set))
+    #res = np.divide(res, num_repetitions)
+
+    """for i in range(6):
+        preemptions[i].append(res[i][0])
+        migrations[i].append(res[i][1])
+        feasibilities[i].append(res[i][2])"""
+
+    """
     x = [i for i in range(10, NUM_CPU_SETS, 10)]
     #print(feasibilities)
     figure, axis = plt.subplots(1, 3)
@@ -134,20 +143,21 @@ def plot_cpu_rep():
         axis[2].plot(x, feasibilities[i], label="Number of feasible sets " + str(i), linestyle="-.")
     plt.legend()
     plt.show()
+    """
 
 
 def generate_task_sets(speeds):
     #print(TASK_SET_SIZE*0.1, sum(speeds), TASK_SET_SIZE*max(speeds))
-    oct.task_generation(TASK_SET_SIZE, 1, sum(speeds), 0.1, max(speeds), NUM_TASK_SETS, TOTAL_UTILIZATION[2])
+    oct.task_generation(TASK_SET_SIZE, 1, sum(speeds)*0.95, 0.1, max(speeds), NUM_TASK_SETS, round(sum(speeds, 0)))
 
 def run_results(i, cpu_set):
-    #directory = 'tasks/tasks_' + str(CPU_SET_SIZES[i])
     directory = 'tasks/tasks_' + str(i)
+    #directory = '/home/users/s/i/sirenard/emma/tasks/tasks_' + str(i)
 
     if not os.path.exists(directory):
         # if the demo_folder directory is not present
         # then create it.
-        os.makedirs(directory)
+        os.makedirs(directory, exist_ok=True)
     # iterate over files in
     # that directory
     local_res = [[0 for _ in range(3)] for _ in range(6)]
@@ -155,22 +165,21 @@ def run_results(i, cpu_set):
     for i in range(len(cpu_set)):
         cpu_set[i] = Cpu(cpu_set[i][0], cpu_set[i][1])
 
-    print(directory, files)
     for filename in files:
-        print(filename)
         f = os.path.join(directory, filename)
         #print(directory, filename)
         # checking if it is a file
         if os.path.isfile(f):
             run_all_schedulers(f, cpu_set)
-            average = average_all()
-            local_res = np.add(local_res, average)
-            print("AVERAGE = ", average)
-        else:
-            print("ERROR : NO FILE FOUND : ", filename)
+
+            #local_res = np.add(local_res, average)
+            #print("AVERAGE = ", average)
+        #else:
+            #print("ERROR : NO FILE FOUND : ", filename)
 
     if len(files) > 0:
-        return np.divide(local_res, len(files))
+        #return np.divide(local_res, len(files))
+        return average_all()
     return -1
 
 
@@ -181,7 +190,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     """
 
-    #plot_cpu_rep()
+    average = plot_cpu_rep()
+    print(average)
 
-    cpu_set, speeds = [(0, 2), (1, 2)], [2,2]
-    run_results(0, cpu_set)
+    #cpu_set, speeds = [(0, 2), (1, 1)], [2,1]
+    #run_results(0, cpu_set)

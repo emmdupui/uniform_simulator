@@ -5,8 +5,8 @@ T_min = 10;
 T_max = 1000;
 T_g = 10;
 
-primes = [3,5,7]
-exponant = 4
+primes = [2,5,7];
+exponant = 4;
 
 matrix = {};
 for prime = primes
@@ -20,10 +20,11 @@ for prime = primes
     end
     matrix = [matrix line];
 end
-matrix
 
 for i = 1:r
-    file_name = strcat("tasks/tasks_", int2str(speed), "/task_set_", int2str(i), '.txt');
+    #file_name = strcat("/home/users/s/i/sirenard/emma/tasks/tasks_", int2str(speed), "/task_set_", int2str(i), '.txt');
+    file_name = strcat("tasks/tasks_",int2str(2), "/task_set_", int2str(i), '.txt');
+
     file_id = fopen(file_name, 'w');
     U = randfixedsum(n,m,s,a,b);
     for j = 1:n
@@ -34,9 +35,8 @@ for i = 1:r
             matrix{line}(index);
             T_i = T_i * matrix{line}(index);
         end
-        T_i
         wcet = u_i * T_i;
-        task = [0 floor(wcet) floor(T_i) floor(T_i)];
+        task = [0 round(wcet*10)/10 round(T_i*10)/10 round(T_i*10)/10];
 
         fdisp(file_id, task);
     end

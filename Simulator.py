@@ -6,7 +6,7 @@ from Schedulers import Scheduler
 from typing import List
 from Event import *
 
-RUNNING_TIME = 10
+RUNNING_TIME = 1400
 
 class Simulator:
     def __init__(self, scheduler: Scheduler):
@@ -34,7 +34,8 @@ class Simulator:
 
     def run(self):
         for task in self.task_list:
-            self.queue.add_event(Event(RELEASE, self.t + task.get_offset(), task, self.t))  # add release event
+            if task.get_wcet() > 0:
+                self.queue.add_event(Event(RELEASE, self.t + task.get_offset(), task, self.t))  # add release event
 
         #print("     FIRST RUN queue = ", [(self.queue.get_el(i).get_id(), self.queue.get_el(i).get_task().get_id()) for i in range(self.queue.get_len())])
 
@@ -55,11 +56,12 @@ class Simulator:
             self.num_preemptions += self.scheduler.get_num_preemptions()
             self.num_migrations += self.scheduler.get_num_migrations()
 
-        print(self.num_preemptions, self.num_migrations)
+        #print(self.num_preemptions, self.num_migrations)
 
     def treat_event(self):
         event = self.queue.get_head()
         self.t = event.get_t()  # update common time to event time
+        #print(self.t)
         if not self.looping:
             self.processor_occupation = [[] for _ in self.processors]
             # compute job execution till now
@@ -75,21 +77,24 @@ class Simulator:
                     else:
                         job.execute((self.t - self.last_t), job.get_processor()[0].get_speed())
 
-                    print("     Job ", job.get_id(), " is done execution on CPU ", cpu_print,
-                         "at time t = ", self.t)
+                else:
+                    job.execute(0, -1)
+
+                    #print("     Job ", job.get_id(), " is done execution on CPU ", cpu_print,
+                    #     "at time t = ", self.t)
 
             for job in self.job_list:
                 self.check_deadline(job)
 
         if self.no_deadlines_missed:
             if event.get_id() == RELEASE:
-                print("Event RELEASE of task ", event.get_task().get_id(), "at time t = ", self.t)
+                #print("Event RELEASE of task ", event.get_task().get_id(), "at time t = ", self.t)
                 self.treat_event_release(event)
             elif event.get_id() == COMPLETION:
-                print("Event COMPLETION of task ", event.get_task().get_id(), "at time t = ", self.t)
+                #print("Event COMPLETION of task ", event.get_task().get_id(), "at time t = ", self.t)
                 self.treat_event_completion(event)
             else:
-                print("Event NEXT of task ", event.get_task().get_id(), "at time t = ", self.t)
+                #print("Event NEXT of task ", event.get_task().get_id(), "at time t = ", self.t)
                 self.treat_event_next()
 
             self.last_t = self.t
@@ -170,7 +175,7 @@ class Simulator:
     def check_deadline(self, job: Job):
         if not self.looping and job.get_deadline() <= self.t and round(job.get_wcet(),7) > 0:
             self.no_deadlines_missed = False
-            print("DEADLINE MISSED at time t = ", job.get_deadline(), "by job ", job.get_id())
+            #print("DEADLINE MISSED at time t = ", job.get_deadline(), "by job ", job.get_id())
 
     def update_queue(self, interrupt_job):
         """

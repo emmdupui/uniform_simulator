@@ -3,8 +3,11 @@ import numpy as np
 from scipy.stats import truncnorm
 import oct2py
 
+
 oct = oct2py.Oct2Py()
+
 oct.eval('pkg load statistics')
+#oct.cd('/home/users/s/i/sirenard/emma/code')
 
 # user input
 myclip_a = 0.1
@@ -25,3 +28,5 @@ def generate_cpu_tasks(total_utilization, cpu_set_size, std, mean):
 
 
 #print(generate_cpu_tasks(4, 10, 10, 0.5))
+if __name__ == '__main__':
+    print(generate_cpu_tasks(10, 10, 10, 0.5))

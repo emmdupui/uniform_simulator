@@ -56,17 +56,18 @@ class Job:
         if self.last_processor[0] != self.processor and self.last_processor[0] is not None:
             self.num_preemptions += 1
 
-        if self.last_processor[1] is not None and self.last_processor[1] != self.processor:
+        if self.last_processor[1] is not None and self.processor is not None and self.last_processor[1] != self.processor:
             self.num_migrations += 1
 
     def execute(self, t: int, processor_speed):
         if (t) > 0:
             self.wcet = self.wcet - t * processor_speed
             self.e = self.e - t * processor_speed
-            self.update_performances()
             # print(self.wcet)
         if self.wcet == 0:
             self.processor = None
+        else:
+            self.update_performances()
 
         self.last_processor[0] = self.processor  # remembers cpu on which he last ran on
         if self.processor is not None:
