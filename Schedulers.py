@@ -1,16 +1,17 @@
 from Cpu import Cpu
 from Task import Task
-from Job import Job, WATERFALL_MIGRATIONS_ENABLED
+from Job import Job
 from typing import List, Tuple, Any, Union
 from utils import binary_search
 import math
 
 
 class Scheduler:
-    def __init__(self):
+    def __init__(self, WF):
         self.task_list = []
         self.processors = []
         self.jobs_on_processors = None
+        self.WF = WF
 
     @staticmethod
     def add_job(job_list: List[Job], job: Job):
@@ -56,7 +57,7 @@ class Scheduler:
         job_priority = job_list.index(job)
         if job_priority < len(processor_list):
             # not avoiding waterfall migrations
-            if WATERFALL_MIGRATIONS_ENABLED:
+            if self.WF:
                 #print(job.get_id(), job.get_priority())
                 job.set_processor([processor_list[job_priority]])
             else:
@@ -65,8 +66,9 @@ class Scheduler:
                 free_cpu = [cpu for cpu in processor_list]
                 for i in range(len(job_list)):
                 #for i in range(job_priority):
-                    if job_list[i].get_processor() is not None and job_list[i].get_processor()[0] in free_cpu:
-                        del free_cpu[free_cpu.index(job_list[i].get_processor()[0])]
+                    if job_list[i] != job and job_list[i].get_processor() is not None and job_list[i].get_processor()[0] in free_cpu:
+                        if job_list[i].get_priority() <= job.get_priority():
+                            del free_cpu[free_cpu.index(job_list[i].get_processor()[0])]
 
                 if len(free_cpu) > 0:
                     new_cpu_index = free_cpu[0].get_id()
@@ -108,8 +110,8 @@ class Scheduler:
 
 
 class RM_Scheduler(Scheduler):
-    def __init__(self):
-        super(RM_Scheduler, self).__init__()
+    def __init__(self, WF):
+        super(RM_Scheduler, self).__init__(WF)
 
     @staticmethod
     def add_job(job_list: List[Job], job: Job):
@@ -134,8 +136,8 @@ class RM_Scheduler(Scheduler):
 
 
 class EDF_Scheduler(Scheduler):
-    def __init__(self):
-        super(EDF_Scheduler, self).__init__()
+    def __init__(self, WF):
+        super(EDF_Scheduler, self).__init__(WF)
 
     @staticmethod
     def add_job(job_list: List[Job], job: Job):
@@ -158,8 +160,8 @@ class EDF_Scheduler(Scheduler):
 
 
 class Level_Scheduler(Scheduler):
-    def __init__(self):
-        super(Level_Scheduler, self).__init__()
+    def __init__(self, WF):
+        super(Level_Scheduler, self).__init__(WF)
         self.num_preemptions = 0
         self.num_migrations = 0
         self.unit_performances = 0
@@ -221,7 +223,7 @@ class Level_Scheduler(Scheduler):
             for job in job_list:
                 processors = job.get_processor()
                 if processors != job.get_last_processor() and processors not in counted_processors and processors is not None:
-                    if WATERFALL_MIGRATIONS_ENABLED:
+                    if self.WF:
                         self.unit_performances += len(processors) * len(
                             self.get_jobs_on_processor(processors[0].get_id()))
                     else:
@@ -300,7 +302,12 @@ class Level_Scheduler(Scheduler):
             while search_index < len(job_list) and round(job_list[search_index].get_e(), 7) == round(job.get_e(), 7):
                 num_same_priority += 1
                 search_index += 1
-            job.set_processor(processor_list[len(occupied_processors):len(occupied_processors) + num_same_priority])
+            if num_same_priority > 0:
+                job.set_processor(processor_list[len(occupied_processors):len(occupied_processors) + num_same_priority])
+            else:
+                job.set_processor(None)
+            if job.get_processor() == [] :
+                job.set_processor(None)
             for i in range(len(occupied_processors), len(occupied_processors) + num_same_priority):
                 if i < len(self.jobs_on_processors) and job not in self.jobs_on_processors[i]:
                     self.jobs_on_processors[i].append(job)
@@ -310,12 +317,13 @@ class Level_Scheduler(Scheduler):
 
 
 class Partitionned_Scheduler(Scheduler):
-    def __init__(self):
-        super(Partitionned_Scheduler, self).__init__()
+    def __init__(self, WF):
+        super(Partitionned_Scheduler, self).__init__(WF)
         self.processors = []
         self.active_jobs = None
         self.processor_assignment = None
         self.cpu_U = None
+        self.WF = WF
 
     @staticmethod
     def add_job(job_list: List[Job], job: Job):  # EDF BY DEFAULT
@@ -382,8 +390,8 @@ class Partitionned_Scheduler(Scheduler):
 
 
 class FFD_Scheduler(Partitionned_Scheduler):
-    def __init__(self):
-        super(FFD_Scheduler, self).__init__()
+    def __init__(self, WF):
+        super(FFD_Scheduler, self).__init__(WF)
 
     def run(self, task_list: List[Task], processor_list: List[Cpu]):
         self.processors = processor_list
@@ -405,8 +413,8 @@ class FFD_Scheduler(Partitionned_Scheduler):
 
 
 class AFD_Scheduler(Partitionned_Scheduler):
-    def __init__(self):
-        super(AFD_Scheduler, self).__init__()
+    def __init__(self, WF):
+        super(AFD_Scheduler, self).__init__(WF)
 
     def run(self, task_list: List[Task], processor_list: List[Cpu]):
         self.processors = processor_list  # no sorting as any processor fit is fine
@@ -423,8 +431,8 @@ class AFD_Scheduler(Partitionned_Scheduler):
 
 
 class EDF_DU_IS_FF_Scheduler(Partitionned_Scheduler):
-    def __init__(self):
-        super(EDF_DU_IS_FF_Scheduler, self).__init__()
+    def __init__(self, WF):
+        super(EDF_DU_IS_FF_Scheduler, self).__init__(WF)
 
     def run(self, task_list: List[Task], processor_list: List[Cpu]):
         self.processors = processor_list

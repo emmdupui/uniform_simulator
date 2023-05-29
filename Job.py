@@ -1,7 +1,3 @@
-WATERFALL_MIGRATIONS_ENABLED = True
-
-# TODO: bad computation of migrations
-
 class Job:
     def __init__(self, id: int, release_time: int, deadline: int, wcet: int, priority: int):
         self.id = id

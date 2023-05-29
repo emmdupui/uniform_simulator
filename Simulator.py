@@ -6,7 +6,7 @@ from Schedulers import Scheduler
 from typing import List
 from Event import *
 
-RUNNING_TIME = 1400
+RUNNING_TIME = 14
 
 class Simulator:
     def __init__(self, scheduler: Scheduler):
@@ -33,6 +33,8 @@ class Simulator:
         return not self.no_deadlines_missed
 
     def run(self):
+        #for cpu in self.processors:
+        #    print(cpu.get_id(), cpu.get_speed())
         for task in self.task_list:
             if task.get_wcet() > 0:
                 self.queue.add_event(Event(RELEASE, self.t + task.get_offset(), task, self.t))  # add release event
@@ -76,12 +78,12 @@ class Simulator:
                         job.execute((self.t - self.last_t), processor_speed)
                     else:
                         job.execute((self.t - self.last_t), job.get_processor()[0].get_speed())
-
+                    #print("     Job ", job.get_id(), " is done execution on CPU ", cpu_print,
+                    #    "at time t = ", self.t)
                 else:
                     job.execute(0, -1)
 
-                    #print("     Job ", job.get_id(), " is done execution on CPU ", cpu_print,
-                    #     "at time t = ", self.t)
+
 
             for job in self.job_list:
                 self.check_deadline(job)

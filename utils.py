@@ -29,7 +29,7 @@ def task_file_parser(filename: str) -> List[Task]:
     with open(filename) as file:
         id = 0
         for line in file:
-            if len(line.strip()):  # don't care about empty lines
+            if len(line.strip()) and len(line.strip().split()) == 4:  # don't care about empty lines
                 task_properties = map(float, line.strip().split())  # retrieve task properties as integers list
                 task_list.append(Task(id, *task_properties))
                 id += 1
@@ -48,3 +48,6 @@ def save_task_list(task_list: List[Task], filename: str):
 
     with open(filename, "w") as file:
         file.write("\n".join(lines))
+
+if __name__ == '__main__':
+    task_file_parser("tasks/tasks_10_1/task_set_1.txt")

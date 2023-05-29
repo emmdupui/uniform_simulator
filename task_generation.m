@@ -1,9 +1,5 @@
 
-function [x,v] = task_generation(n, m, s, a, b, r, speed)
-
-T_min = 10;
-T_max = 1000;
-T_g = 10;
+function [x,v] = task_generation(n, m, s, a, b, r, speed, run_id)
 
 primes = [2,5,7];
 exponant = 4;
@@ -22,9 +18,9 @@ for prime = primes
 end
 
 for i = 1:r
-    #file_name = strcat("/home/users/s/i/sirenard/emma/tasks/tasks_", int2str(speed), "/task_set_", int2str(i), '.txt');
-    file_name = strcat("tasks/tasks_",int2str(2), "/task_set_", int2str(i), '.txt');
-
+    # file_name = strcat("/home/users/s/i/sirenard/emma/code/tasks/tasks_", int2str(speed), '_' ,int2str(run_id), "/task_set_", int2str(i), '.txt');
+    file_name = strcat("/home/emma/Documents/MA2/thesis/Scheduler/mstd_tasks/tasks/tasks_", int2str(speed), '_' ,int2str(run_id),"/task_set_", int2str(i), '.txt');
+    #file_name = strcat("/tasks/tasks_", int2str(speed), '_' ,int2str(run_id),"/task_set_", int2str(i), '.txt');
     file_id = fopen(file_name, 'w');
     U = randfixedsum(n,m,s,a,b);
     for j = 1:n
